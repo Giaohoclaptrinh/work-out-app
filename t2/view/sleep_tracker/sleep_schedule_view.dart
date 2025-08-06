@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:simple_animation_progress_bar/simple_animation_progress_bar.dart';
 
 import '../../common/colo_extension.dart';
-import '../../common_widget/round_button.dart';
-import '../../common_widget/today_sleep_schedule_row.dart';
+import 'package:workout_app/widgets/round_button.dart';
+import 'package:workout_app/widgets/today_sleep_schedule_row.dart';
 
 class SleepScheduleView extends StatefulWidget {
   const SleepScheduleView({super.key});
@@ -16,7 +16,7 @@ class SleepScheduleView extends StatefulWidget {
 }
 
 class _SleepScheduleViewState extends State<SleepScheduleView> {
-  CalendarAgendaController _calendarAgendaControllerAppBar =
+  final CalendarAgendaController _calendarAgendaControllerAppBar =
       CalendarAgendaController();
   late DateTime _selectedDateAppBBar;
 

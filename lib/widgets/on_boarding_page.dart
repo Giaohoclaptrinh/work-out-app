@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../common/colo_extension.dart';
+import 'package:workout_app/common/color_extension.dart';
 
 class OnBoardingPage extends StatelessWidget {
   final Map pObj;

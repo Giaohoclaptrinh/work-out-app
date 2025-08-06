@@ -3,7 +3,7 @@ import 'package:fitness/view/login/welcome_view.dart';
 import 'package:flutter/material.dart';
 
 import '../../common/colo_extension.dart';
-import '../../common_widget/round_button.dart';
+import 'package:workout_app/widgets/round_button.dart';
 
 class WhatYourGoalView extends StatefulWidget {
   const WhatYourGoalView({super.key});

@@ -31,11 +31,11 @@ class _WorkoutTrackerViewState extends State<WorkoutTrackerView> {
           .get();
 
       final workouts = workoutSnapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
+          .map((doc) => doc.data())
           .toList();
 
       final tips = tipSnapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
+          .map((doc) => doc.data())
           .toList();
 
       setState(() {

@@ -1,10 +1,11 @@
-import 'package:fitness/common/colo_extension.dart';
+import 'package:workout_app/common/color_extension.dart';
 import 'package:flutter/material.dart';
 
+import 'package:workout_app/common/date_common.dart';
 
-class PopularMealRow extends StatelessWidget {
+class TodayMealRow extends StatelessWidget {
   final Map mObj;
-  const PopularMealRow({super.key, required this.mObj});
+  const TodayMealRow({super.key, required this.mObj});
 
   @override
   Widget build(BuildContext context) {
@@ -17,11 +18,14 @@ class PopularMealRow extends StatelessWidget {
             boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)]),
         child: Row(
           children: [
-            Image.asset(
-              mObj["image"].toString(),
-              width: 50,
-              height: 50,
-              fit: BoxFit.contain,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: Image.asset(
+                mObj["image"].toString(),
+                width: 40,
+                height: 40,
+                fit: BoxFit.cover,
+              ),
             ),
             const SizedBox(
               width: 15,
@@ -34,20 +38,23 @@ class PopularMealRow extends StatelessWidget {
                     mObj["name"].toString(),
                     style: TextStyle(
                         color: TColor.black,
-                        fontSize: 14,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500),
                   ),
                   Text(
-                    "${mObj["size"]} | ${mObj["time"]} | ${mObj["kcal"]}",
-                    style: TextStyle(color: TColor.gray, fontSize: 12),
-                  )
+                     "${getDayTitle(mObj["time"].toString())} | ${getStringDateToOtherFormate(mObj["time"].toString(), outFormatStr: "h:mm aa")}",
+                    style: TextStyle(
+                      color: TColor.gray,
+                      fontSize: 10,
+                    ),
+                  ),
                 ],
               ),
             ),
             IconButton(
               onPressed: () {},
               icon: Image.asset(
-                "assets/img/next_icon.png",
+                "assets/img/bell.png",
                 width: 25,
                 height: 25,
               ),

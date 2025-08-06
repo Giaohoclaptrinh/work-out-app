@@ -1,23 +1,23 @@
-import 'package:fitness/common/colo_extension.dart';
+
+import 'package:workout_app/common/color_extension.dart';
 import 'package:flutter/material.dart';
 
-class ExercisesRow extends StatelessWidget {
-  final Map eObj;
-  final VoidCallback onPressed;
-  const ExercisesRow({super.key, required this.eObj, required this.onPressed});
+class NotificationRow extends StatelessWidget {
+  final Map nObj;
+  const NotificationRow({super.key, required this.nObj});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(5),
+            borderRadius: BorderRadius.circular(30),
             child: Image.asset(
-              eObj["image"].toString(),
-              width: 60,
-              height: 60,
+              nObj["image"].toString(),
+              width: 40,
+              height: 40,
               fit: BoxFit.cover,
             ),
           ),
@@ -29,24 +29,27 @@ class ExercisesRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                eObj["title"].toString(),
-                style: TextStyle(color: TColor.black, fontSize: 14, fontWeight: FontWeight.w500),
+                nObj["title"].toString(),
+                style: TextStyle(
+                    color: TColor.black,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12),
               ),
               Text(
-                eObj["value"].toString(),
+                nObj["time"].toString(),
                 style: TextStyle(
                   color: TColor.gray,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
               ),
             ],
           )),
           IconButton(
-              onPressed: onPressed,
+              onPressed: () {},
               icon: Image.asset(
-                "assets/img/next_go.png",
-                width: 20,
-                height: 20,
+                "assets/img/sub_menu.png",
+                width: 15,
+                height: 15,
                 fit: BoxFit.contain,
               ))
         ],

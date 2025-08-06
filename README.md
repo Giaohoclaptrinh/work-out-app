@@ -171,3 +171,24 @@ The app includes sample workouts and exercises:
 ## License
 
 This project is licensed under the MIT License.
+
+
+1. auth_screen.dart
+RoundTextField (tạo UI input đẹp hơn cho email, password)
+RoundButton (thay thế nút đăng nhập/đăng ký mặc định)
+SettingRow (nếu có phần chọn đăng nhập bằng mạng xã hội hoặc các lựa chọn khác)
+2. onboarding_screen.dart
+OnBoardingPage (hiển thị từng trang onboarding với hình ảnh, tiêu đề, mô tả)
+RoundButton (nút Next/Get Started)
+TabButton (nếu có tab chuyển đổi giữa các bước)
+3. workout_list_screen.dart
+WorkoutRow (hiển thị từng bài tập trong danh sách)
+UpcomingWorkoutRow (hiển thị các bài tập sắp tới)
+LatestActivityRow (hiển thị hoạt động gần đây)
+PopularMealRow (nếu có phần gợi ý meal liên quan đến workout)
+NotificationRow (hiển thị thông báo liên quan đến workout)
+4. gym_visual_exercises_screen.dart
+ExercisesRow (hiển thị từng bài tập với hình ảnh và thông tin)
+ExercisesSetSection (hiển thị các set bài tập)
+StepDetailRow hoặc FoodStepDetailRow (nếu có phần hướng dẫn từng bước)
+TabButton (chuyển đổi giữa các nhóm cơ hoặc loại bài tập)

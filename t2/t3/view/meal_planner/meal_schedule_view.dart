@@ -14,7 +14,7 @@ class MealScheduleView extends StatefulWidget {
 }
 
 class _MealScheduleViewState extends State<MealScheduleView> {
-  CalendarAgendaController _calendarAgendaControllerAppBar =
+  final CalendarAgendaController _calendarAgendaControllerAppBar =
       CalendarAgendaController();
 
   late DateTime _selectedDateAppBBar;

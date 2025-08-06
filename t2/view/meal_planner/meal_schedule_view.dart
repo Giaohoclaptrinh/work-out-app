@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:simple_animation_progress_bar/simple_animation_progress_bar.dart';
 
 import '../../common/colo_extension.dart';
-import '../../common_widget/meal_food_schedule_row.dart';
-import '../../common_widget/nutritions_row.dart';
+import 'package:workout_app/widgets/meal_food_schedule_row.dart';
+import 'package:workout_app/widgets/nutritions_row.dart';
 
 class MealScheduleView extends StatefulWidget {
   const MealScheduleView({super.key});
@@ -14,7 +14,7 @@ class MealScheduleView extends StatefulWidget {
 }
 
 class _MealScheduleViewState extends State<MealScheduleView> {
-  CalendarAgendaController _calendarAgendaControllerAppBar =
+  final CalendarAgendaController _calendarAgendaControllerAppBar =
       CalendarAgendaController();
 
   late DateTime _selectedDateAppBBar;

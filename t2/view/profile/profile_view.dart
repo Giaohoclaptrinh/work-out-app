@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../common/colo_extension.dart';
-import '../../common_widget/round_button.dart';
-import '../../common_widget/setting_row.dart';
-import '../../common_widget/title_subtitle_cell.dart';
+import 'package:workout_app/widgets/round_button.dart';
+import 'package:workout_app/widgets/setting_row.dart';
+import 'package:workout_app/widgets/title_subtitle_cell.dart';
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 
 class ProfileView extends StatefulWidget {

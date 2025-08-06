@@ -2,7 +2,7 @@ import 'package:fitness/common/colo_extension.dart';
 import 'package:fitness/view/on_boarding/on_boarding_view.dart';
 import 'package:flutter/material.dart';
 
-import '../../common_widget/round_button.dart';
+import 'package:workout_app/widgets/round_button.dart';
 
 class StartedView extends StatefulWidget {
   const StartedView({super.key});

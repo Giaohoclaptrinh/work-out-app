@@ -2,8 +2,8 @@ import 'package:fitness/common/colo_extension.dart';
 import 'package:fitness/view/login/what_your_goal_view.dart';
 import 'package:flutter/material.dart';
 
-import '../../common_widget/round_button.dart';
-import '../../common_widget/round_textfield.dart';
+import 'package:workout_app/widgets/round_button.dart';
+import 'package:workout_app/widgets/round_textfield.dart';
 
 class CompleteProfileView extends StatefulWidget {
   const CompleteProfileView({super.key});

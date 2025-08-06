@@ -1,5 +1,5 @@
 
-import 'package:fitness/common/colo_extension.dart';
+import 'package:workout_app/common/color_extension.dart';
 import 'package:flutter/material.dart';
 
 class TodayTargetCell extends StatelessWidget {

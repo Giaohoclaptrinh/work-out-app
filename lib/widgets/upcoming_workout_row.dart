@@ -1,5 +1,5 @@
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
-import 'package:fitness/common/colo_extension.dart';
+import 'package:workout_app/common/color_extension.dart';
 import 'package:flutter/material.dart';
 
 class UpcomingWorkoutRow extends StatefulWidget {
@@ -62,7 +62,7 @@ class _UpcomingWorkoutRowState extends State<UpcomingWorkoutRow> {
              CustomAnimatedToggleSwitch<bool>(
               current: positive,
               values: [false, true],
-              dif: 0.0,
+              
               indicatorSize: const Size.square(30.0),
               animationDuration: const Duration(milliseconds: 200),
               animationCurve: Curves.linear,
@@ -70,8 +70,8 @@ class _UpcomingWorkoutRowState extends State<UpcomingWorkoutRow> {
               iconBuilder: (context, local, global) {
                 return const SizedBox();
               },
-              defaultCursor: SystemMouseCursors.click,
-              onTap: () => setState(() => positive = !positive),
+              
+              onTap: (b) => setState(() => positive = !positive),
               iconsTappable: false,
               wrapperBuilder: (context, global, child) {
                 return Stack(

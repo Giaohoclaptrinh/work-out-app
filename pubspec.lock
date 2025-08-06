@@ -17,6 +17,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  animated_toggle_switch:
+    dependency: "direct main"
+    description:
+      name: animated_toggle_switch
+      sha256: "31ba41bb2b13b1324da8370bda934cd569e77d42ce5950cf1d31707b6061a0d0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.5"
   async:
     dependency: transitive
     description:
@@ -129,6 +137,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.8"
+  dotted_dashed_line:
+    dependency: "direct main"
+    description:
+      name: dotted_dashed_line
+      sha256: da3678819f4522c982eb256d2bc80d032fd2a3e7b437841ea83987c67c00cda5
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.3"
   equatable:
     dependency: transitive
     description:
@@ -664,6 +680,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.1"
+  simple_animation_progress_bar:
+    dependency: "direct main"
+    description:
+      name: simple_animation_progress_bar
+      sha256: "57d4a6f838020deb1ae69600be9365cd3d85e7416dc0a5e66b490581e4fddcd8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.9.2"
   simple_gesture_detector:
     dependency: transitive
     description:

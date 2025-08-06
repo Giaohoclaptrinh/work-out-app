@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../common/colo_extension.dart';
 import '../../common/common.dart';
-import '../../common_widget/round_button.dart';
+import 'package:workout_app/widgets/round_button.dart';
 import 'add_schedule_view.dart';
 
 class WorkoutScheduleView extends StatefulWidget {
@@ -17,7 +17,7 @@ class WorkoutScheduleView extends StatefulWidget {
 }
 
 class _WorkoutScheduleViewState extends State<WorkoutScheduleView> {
-  CalendarAgendaController _calendarAgendaControllerAppBar =
+  final CalendarAgendaController _calendarAgendaControllerAppBar =
       CalendarAgendaController();
   late DateTime _selectedDateAppBBar;
 

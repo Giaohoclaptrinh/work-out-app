@@ -2,9 +2,9 @@ import 'package:fitness/common_widget/meal_recommed_cell.dart';
 import 'package:flutter/material.dart';
 
 import '../../common/colo_extension.dart';
-import '../../common_widget/meal_category_cell.dart';
-import '../../common_widget/popular_meal_row.dart';
-import '../../common_widget/today_meal_row.dart';
+import 'package:workout_app/widgets/meal_category_cell.dart';
+import 'package:workout_app/widgets/popular_meal_row.dart';
+import 'package:workout_app/widgets/today_meal_row.dart';
 import 'food_info_details_view.dart';
 
 class MealFoodDetailsView extends StatefulWidget {

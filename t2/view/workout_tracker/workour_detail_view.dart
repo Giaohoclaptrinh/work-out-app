@@ -5,7 +5,7 @@ import 'package:fitness/view/workout_tracker/exercises_stpe_details.dart';
 import 'package:fitness/view/workout_tracker/workout_schedule_view.dart';
 import 'package:flutter/material.dart';
 
-import '../../common_widget/exercises_set_section.dart';
+import 'package:workout_app/widgets/exercises_set_section.dart';
 
 class WorkoutDetailView extends StatefulWidget {
   final Map dObj;
