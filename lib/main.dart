@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
-import 'views/main_tab/main_tab_view.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:provider/provider.dart';
+import 'services/service_provider.dart';
+import 'widgets/auth_wrapper.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const WorkoutApp());
 }
 
@@ -10,11 +16,14 @@ class WorkoutApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Fitness Tracker',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue, fontFamily: "Poppins"),
-      home: const MainTabView(),
+    return MultiProvider(
+      providers: AppProviders.getProviders(),
+      child: MaterialApp(
+        title: 'Fitness Tracker',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(primarySwatch: Colors.blue, fontFamily: "Poppins"),
+        home: const AuthWrapper(),
+      ),
     );
   }
 }

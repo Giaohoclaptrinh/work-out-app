@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../common/color_extension.dart';
-import '../../common/common_widgets.dart';
+import '../../screens/auth_screen.dart'; // Đảm bảo có AuthScreen để quay lại sau khi sign out
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -10,295 +12,210 @@ class ProfileView extends StatefulWidget {
 }
 
 class _ProfileViewState extends State<ProfileView> {
-  List accountArr = [
-    {"image": "assets/img/p_personal.png", "name": "Personal Data", "tag": "1"},
-    {"image": "assets/img/p_achi.png", "name": "Achievement", "tag": "2"},
-    {"image": "assets/img/p_activity.png", "name": "Activity History", "tag": "3"},
-    {"image": "assets/img/p_workout.png", "name": "Workout Progress", "tag": "4"}
-  ];
+  Future<Map<String, dynamic>?> fetchUserData() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return null;
 
-  List otherArr = [
-    {"image": "assets/img/p_contact.png", "name": "Contact Us", "tag": "5"},
-    {"image": "assets/img/p_privacy.png", "name": "Privacy Policy", "tag": "6"},
-    {"image": "assets/img/p_setting.png", "name": "Setting", "tag": "7"},
-  ];
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .get();
+
+    return doc.data();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: TColor.white,
-      body: SingleChildScrollView(
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 25),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: Container(
-                      height: 50,
-                      width: 50,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: TColor.primaryG),
-                      ),
-                      child: Icon(
-                        Icons.person,
-                        color: TColor.white,
-                        size: 25,
-                      ),
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: fetchUserData(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final user = snapshot.data ?? {};
+
+        return Scaffold(
+          backgroundColor: TColor.white,
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Avatar + Info + Settings button
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: TColor.primaryColor1,
+                      child: Icon(Icons.person, color: TColor.white, size: 30),
                     ),
-                  ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Stefani Wong",
-                          style: TextStyle(
-                            color: TColor.black,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          "Lose a Fat Program",
-                          style: TextStyle(
-                            color: TColor.gray,
-                            fontSize: 12,
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    width: 70,
-                    height: 25,
-                    child: RoundButton(
-                      title: "Edit",
-                      fontSize: 12,
-                      onPressed: () {},
-                    ),
-                  )
-                ],
-              ),
-              const SizedBox(height: 15),
-              
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 70,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: TColor.white,
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
-                      ),
+                    const SizedBox(width: 15),
+                    Expanded(
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "180cm",
-                            style: TextStyle(
-                              color: TColor.primaryColor1,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+                          // Profile Settings button
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton.icon(
+                              onPressed: () {
+                                // TODO: Navigate to profile settings screen
+                              },
+                              icon: const Icon(Icons.settings, size: 16),
+                              label: const Text("Profile Settings"),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 30),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
                             ),
                           ),
                           Text(
-                            "Height",
+                            user['displayName'] ?? 'No Name',
                             style: TextStyle(
-                              color: TColor.gray,
-                              fontSize: 12,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: TColor.black,
                             ),
-                          )
+                          ),
+                          Text(
+                            (user['goals'] as List?)
+                                    ?.join(', ')
+                                    .trim()
+                                    .toString() ??
+                                'No Goals',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: TColor.primaryColor2,
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: Container(
-                      height: 70,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: TColor.white,
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            "65kg",
-                            style: TextStyle(
-                              color: TColor.primaryColor1,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            "Weight",
-                            style: TextStyle(
-                              color: TColor.gray,
-                              fontSize: 12,
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: Container(
-                      height: 70,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: TColor.white,
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            "22yo",
-                            style: TextStyle(
-                              color: TColor.primaryColor1,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            "Age",
-                            style: TextStyle(
-                              color: TColor.gray,
-                              fontSize: 12,
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 25),
-              
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                decoration: BoxDecoration(
-                  color: TColor.white,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Account",
-                      style: TextStyle(
-                        color: TColor.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ListView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      itemCount: accountArr.length,
-                      itemBuilder: (context, index) {
-                        var iObj = accountArr[index] as Map? ?? {};
-                        return SettingRow(
-                          icon: "assets/img/p_personal.png",
-                          title: iObj["name"].toString(),
-                          onPressed: () {},
-                        );
-                      },
-                    )
                   ],
                 ),
-              ),
-              
-              const SizedBox(height: 25),
-              
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                decoration: BoxDecoration(
-                  color: TColor.white,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                const SizedBox(height: 20),
+
+                // Height - Weight - Age
+                Row(
                   children: [
-                    Text(
-                      "Notification",
-                      style: TextStyle(
-                        color: TColor.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SwitchListTile.adaptive(
-                      activeColor: TColor.primaryColor1,
-                      value: true,
-                      onChanged: (newVal) {},
-                      title: Text(
-                        "Pop-up Notification",
-                        style: TextStyle(
-                          color: TColor.black,
-                          fontSize: 12,
-                        ),
-                      ),
-                    )
+                    _buildInfoCard("Height", "${user['height'] ?? '--'} cm"),
+                    const SizedBox(width: 10),
+                    _buildInfoCard("Weight", "${user['weight'] ?? '--'} kg"),
+                    const SizedBox(width: 10),
+                    _buildInfoCard("Age", _calculateAge(user['dateOfBirth'])),
                   ],
                 ),
-              ),
-              
-              const SizedBox(height: 25),
-              
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                decoration: BoxDecoration(
-                  color: TColor.white,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Other",
-                      style: TextStyle(
-                        color: TColor.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+
+                const SizedBox(height: 30),
+
+                // Account Section
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Account",
+                    style: TextStyle(
+                      color: TColor.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 8),
-                    ListView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      itemCount: otherArr.length,
-                      itemBuilder: (context, index) {
-                        var iObj = otherArr[index] as Map? ?? {};
-                        return SettingRow(
-                          icon: "assets/img/p_contact.png",
-                          title: iObj["name"].toString(),
-                          onPressed: () {},
-                        );
-                      },
-                    )
-                  ],
+                  ),
                 ),
-              )
-            ],
+                const SizedBox(height: 10),
+                _buildSettingTile(Icons.email, "Email", user['email'] ?? '--'),
+
+                const SizedBox(height: 20),
+
+                // Other Section
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Other",
+                    style: TextStyle(
+                      color: TColor.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _buildSettingTile(
+                  Icons.logout,
+                  "Sign Out",
+                  null,
+                  onTap: () async {
+                    await FirebaseAuth.instance.signOut();
+                    if (!mounted) return;
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AuthScreen()),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoCard(String label, String value) {
+    return Expanded(
+      child: Container(
+        height: 80,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: TColor.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                color: TColor.primaryColor1,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(label, style: TextStyle(color: TColor.gray, fontSize: 12)),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildSettingTile(
+    IconData icon,
+    String label,
+    String? value, {
+    VoidCallback? onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: TColor.primaryColor1),
+      title: Text(label),
+      subtitle: value != null ? Text(value) : null,
+      onTap: onTap,
+    );
+  }
+
+  String _calculateAge(dynamic dobString) {
+    if (dobString == null) return '--';
+    try {
+      final dob = DateTime.parse(dobString);
+      final now = DateTime.now();
+      int age = now.year - dob.year;
+      if (now.month < dob.month ||
+          (now.month == dob.month && now.day < dob.day)) {
+        age--;
+      }
+      return '$age yo';
+    } catch (_) {
+      return '--';
+    }
   }
 }

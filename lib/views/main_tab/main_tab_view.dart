@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
+
 import '../../common/color_extension.dart';
 import '../home/home_view.dart';
 import '../workout/workout_tracker_view.dart';
 import '../meal/meal_planner_view.dart';
-import '../sleep/sleep_tracker_view.dart';
 import '../profile/profile_view.dart';
 
 class MainTabView extends StatefulWidget {
@@ -15,20 +15,20 @@ class MainTabView extends StatefulWidget {
 }
 
 class _MainTabViewState extends State<MainTabView> {
-  int selectTab = 0;
-  PageController controller = PageController();
+  int selectedTabIndex = 0;
+  late PageController controller;
 
-  List<IconData> iconList = [
+  final List<IconData> iconList = [
     Icons.home,
     Icons.fitness_center,
     Icons.restaurant,
-    Icons.bedtime,
+    Icons.person,
   ];
 
   @override
   void initState() {
     super.initState();
-    controller = PageController();
+    controller = PageController(initialPage: selectedTabIndex);
   }
 
   @override
@@ -37,58 +37,57 @@ class _MainTabViewState extends State<MainTabView> {
     super.dispose();
   }
 
+  void onTabSelected(int index) {
+    setState(() {
+      selectedTabIndex = index;
+    });
+    controller.jumpToPage(index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: TColor.white,
       floatingActionButton: InkWell(
-        onTap: () {},
+        onTap: () {
+          // Future: implement search or central action here
+        },
         child: Container(
           width: 55,
           height: 55,
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: TColor.secondaryG),
             borderRadius: BorderRadius.circular(27.5),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 2,
-              ),
-            ],
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
           ),
-          child: Icon(
-            Icons.search,
-            color: TColor.white,
-            size: 20,
-          ),
+          child: Icon(Icons.search, color: TColor.white, size: 24),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: AnimatedBottomNavigationBar(
         icons: iconList,
-        activeIndex: selectTab,
-        height: 90,
-        splashSpeedInMilliseconds: 300,
+        activeIndex: selectedTabIndex,
         gapLocation: GapLocation.center,
         activeColor: TColor.primaryColor1,
         inactiveColor: TColor.gray,
-        onTap: (index) {
-          selectTab = index;
-          controller.jumpToPage(index);
-          setState(() {});
-        },
+        splashSpeedInMilliseconds: 300,
+        onTap: onTabSelected,
+        backgroundColor: Colors.white,
+        height: 70,
       ),
       body: PageView(
         controller: controller,
+        physics: const NeverScrollableScrollPhysics(),
         onPageChanged: (index) {
-          selectTab = index;
-          setState(() {});
+          setState(() {
+            selectedTabIndex = index;
+          });
         },
         children: const [
           HomeView(),
           WorkoutTrackerView(),
           MealPlannerView(),
-          SleepTrackerView(),
+          ProfileTabView(),
         ],
       ),
     );
@@ -101,11 +100,11 @@ class ProfileTabView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: TColor.white,
       appBar: AppBar(
         backgroundColor: TColor.white,
-        centerTitle: true,
         elevation: 0,
-        leadingWidth: 0,
+        centerTitle: true,
         leading: const SizedBox(),
         title: Text(
           "Profile",
@@ -116,28 +115,15 @@ class ProfileTabView extends StatelessWidget {
           ),
         ),
         actions: [
-          InkWell(
-            onTap: () {},
-            child: Container(
-              margin: const EdgeInsets.all(8),
-              height: 40,
-              width: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: TColor.lightGray,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.more_horiz,
-                color: TColor.black,
-                size: 15,
-              ),
-            ),
-          )
+          IconButton(
+            onPressed: () {
+              // Future: Show more options
+            },
+            icon: Icon(Icons.more_horiz, color: TColor.black),
+          ),
         ],
       ),
-      backgroundColor: TColor.white,
-      body: const ProfileView(),
+      body:  ProfileView(),
     );
   }
 }

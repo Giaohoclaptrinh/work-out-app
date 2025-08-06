@@ -11,48 +11,34 @@ class WorkoutListScreen extends StatelessWidget {
         title: const Text('Workouts'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
+      body: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.fitness_center, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'No workouts yet',
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Create your first workout to get started',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+      /*
       body: ListView.builder(
         padding: const EdgeInsets.all(16.0),
-        itemCount: SampleWorkouts.workouts.length,
+        itemCount: 0, // No sample data
         itemBuilder: (context, index) {
-          final workout = SampleWorkouts.workouts[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12.0),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(16.0),
-              title: Text(
-                workout.name,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (workout.description != null) ...[
-                    const SizedBox(height: 4),
-                    Text(workout.description!),
-                  ],
-                  const SizedBox(height: 8),
-                  Text(
-                    '${workout.exercises.length} exercises',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-              trailing: workout.completed
-                  ? Icon(Icons.check_circle, color: Colors.green)
-                  : Icon(
-                      Icons.play_circle_outline,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-              onTap: () {
-                _showWorkoutDetails(context, workout);
-              },
-            ),
-          );
+          // This will not be called since itemCount is 0
+          return const SizedBox.shrink();
         },
       ),
+      */
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _showCreateWorkoutDialog(context);
@@ -148,7 +134,7 @@ class WorkoutListScreen extends StatelessWidget {
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
                               );
-                            }).toList(),
+                            }),
                           ],
                         ),
                       ),
