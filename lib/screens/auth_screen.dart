@@ -183,6 +183,8 @@ class _AuthScreenState extends State<AuthScreen> {
               backgroundColor: Colors.green,
             ),
           );
+          // Navigate to app root to let AuthWrapper handle the flow
+          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
         }
       }
     } on FirebaseAuthException catch (e) {

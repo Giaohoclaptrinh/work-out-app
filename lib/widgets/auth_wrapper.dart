@@ -28,9 +28,11 @@ class AuthWrapper extends StatelessWidget {
         .doc(uid)
         .get();
     if (doc.exists) {
-      return doc.data()?['hasSeenOnboarding'] == true;
+      // Only check onboarding for users who have the hasSeenOnboarding field
+      // If the field doesn't exist, assume they've seen it (existing users)
+      return doc.data()?['hasSeenOnboarding'] ?? true;
     }
-    return false;
+    return true; // Default to true for existing users
   }
 
   @override
