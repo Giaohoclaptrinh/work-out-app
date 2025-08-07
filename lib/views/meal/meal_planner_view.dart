@@ -49,50 +49,10 @@ class _MealPlannerViewState extends State<MealPlannerView> {
       {'name': 'Dinner', 'time': '07:00 PM', 'image': 'assets/img/m_4.png'},
     ];
 
-    todayMealArr = [
-      {
-        'name': 'Oatmeal with Berries',
-        'time': '08:00 AM',
-        'calories': '320 kcal',
-        'image': 'assets/img/m_1.png',
-      },
-      {
-        'name': 'Grilled Chicken Salad',
-        'time': '12:00 PM',
-        'calories': '450 kcal',
-        'image': 'assets/img/m_2.png',
-      },
-    ];
-
-    popularMeals = [
-      {
-        'name': 'Protein Bowl',
-        'calories': '380 kcal',
-        'time': '25 min',
-        'image': 'assets/img/m_1.png',
-      },
-      {
-        'name': 'Quinoa Salad',
-        'calories': '320 kcal',
-        'time': '20 min',
-        'image': 'assets/img/m_2.png',
-      },
-    ];
-
-    recommendedMeals = [
-      {
-        'name': 'Avocado Toast',
-        'calories': '280 kcal',
-        'time': '10 min',
-        'image': 'assets/img/m_3.png',
-      },
-      {
-        'name': 'Smoothie Bowl',
-        'calories': '350 kcal',
-        'time': '15 min',
-        'image': 'assets/img/m_4.png',
-      },
-    ];
+    // Clear sample data - will be populated from real data
+    todayMealArr = [];
+    popularMeals = [];
+    recommendedMeals = [];
 
     if (!_disposed) {
       setState(() {});

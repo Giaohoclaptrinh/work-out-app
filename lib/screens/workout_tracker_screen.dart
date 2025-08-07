@@ -170,6 +170,31 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
     }
   }
 
+  Future<void> _importAllGymVisualWorkouts() async {
+    try {
+      await FirestoreHelper.addAllGymVisualWorkoutsToFirestore();
+      await _loadData();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('All GymVisual workouts imported successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error importing workouts: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _showAllTips() {
     showModalBottomSheet(
       context: context,
@@ -256,6 +281,11 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
             icon: Icon(Icons.add, color: TColor.primaryColor1),
             onPressed: _importGymVisualData,
             tooltip: 'Import GymVisual Data',
+          ),
+          IconButton(
+            icon: Icon(Icons.fitness_center, color: TColor.primaryColor1),
+            onPressed: _importAllGymVisualWorkouts,
+            tooltip: 'Import All GymVisual Workouts',
           ),
           IconButton(
             icon: Icon(Icons.clear, color: TColor.primaryColor1),

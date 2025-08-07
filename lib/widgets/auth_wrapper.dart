@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +22,17 @@ class AuthWrapper extends StatelessWidget {
     return false;
   }
 
+  Future<bool> _checkOnboardingStatus(String uid) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+    if (doc.exists) {
+      return doc.data()?['hasSeenOnboarding'] == true;
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer2<AuthService, OnboardingService>(
@@ -33,17 +43,23 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        if (!onboardingService.isOnboardingComplete) {
-          return const OnboardingScreen();
-        }
-
+        // Check if user is authenticated
         if (authService.isAuthenticated) {
           final uid = authService.currentUser?.uid;
           if (uid == null) return const AuthScreen();
 
-          // Kiểm tra xem đã có dữ liệu cơ thể chưa
-          return FutureBuilder<bool>(
-            future: _checkBodyData(uid),
+          // For authenticated users, check onboarding and body data
+          return FutureBuilder<Map<String, bool>>(
+            future:
+                Future.wait([
+                  _checkOnboardingStatus(uid),
+                  _checkBodyData(uid),
+                ]).then(
+                  (results) => {
+                    'hasSeenOnboarding': results[0],
+                    'hasBodyData': results[1],
+                  },
+                ),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const Scaffold(
@@ -51,13 +67,27 @@ class AuthWrapper extends StatelessWidget {
                 );
               }
 
-              if (snapshot.data == false) {
-                return BodyDataInputScreen(uid: uid);
-              } else {
-                return const MainTabView();
+              final data = snapshot.data!;
+
+              // If user hasn't seen onboarding, show it first
+              if (!data['hasSeenOnboarding']!) {
+                return const OnboardingScreen();
               }
+
+              // If user hasn't completed body data, show body data input
+              if (!data['hasBodyData']!) {
+                return BodyDataInputScreen(uid: uid);
+              }
+
+              // User has completed both onboarding and body data
+              return const MainTabView();
             },
           );
+        }
+
+        // For non-authenticated users, check if they need to see onboarding
+        if (!onboardingService.isOnboardingComplete) {
+          return const OnboardingScreen();
         }
 
         return const AuthScreen();

@@ -4,7 +4,7 @@ import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.da
 import '../../common/color_extension.dart';
 import '../home/home_view.dart';
 import '../../screens/workout_tracker_screen.dart';
-import '../meal/meal_planner_view.dart';
+import '../../screens/meal_planner_screen.dart';
 import '../profile/profile_view.dart';
 
 class MainTabView extends StatefulWidget {
@@ -86,7 +86,7 @@ class _MainTabViewState extends State<MainTabView> {
         children: [
           const HomeView(),
           const WorkoutTrackerScreen(),
-          const MealPlannerView(),
+          const MealPlannerScreen(),
           const ProfileTabView(),
         ],
       ),

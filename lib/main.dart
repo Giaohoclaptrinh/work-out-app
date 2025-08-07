@@ -19,7 +19,7 @@ class WorkoutApp extends StatelessWidget {
     return MultiProvider(
       providers: AppProviders.getProviders(),
       child: MaterialApp(
-        title: 'Fitness Tracker',
+        title: 'Workout App',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(primarySwatch: Colors.blue, fontFamily: "Poppins"),
         home: const AuthWrapper(),

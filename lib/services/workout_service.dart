@@ -18,11 +18,16 @@ class WorkoutService {
         return Workout.fromJson(data);
       }).toList();
 
+      print('Found ${workouts.length} workouts in Firestore');
+
       // If no workouts in Firestore, create from GymVisual exercises
       if (workouts.isEmpty) {
+        print('No workouts found in Firestore, creating from GymVisual data');
         workouts = await _createWorkoutsFromGymVisual();
+        print('Created ${workouts.length} workouts from GymVisual data');
       }
 
+      print('Returning ${workouts.length} total workouts');
       return workouts;
     } catch (e) {
       print('Error fetching workouts: $e');
@@ -37,8 +42,12 @@ class WorkoutService {
 
       List<Workout> workouts = [];
 
+      print('Creating workouts from ${exercises.length} GymVisual exercises');
+
       for (int i = 0; i < exercises.length; i++) {
         final exercise = exercises[i];
+
+        print('Processing exercise ${i + 1}: ${exercise['name']}');
 
         // Tạo workout từ exercise
         final workout = Workout(
@@ -55,8 +64,12 @@ class WorkoutService {
         );
 
         workouts.add(workout);
+        print(
+          'Created workout: ${workout.name} with ${workout.steps.length} steps',
+        );
       }
 
+      print('Total workouts created: ${workouts.length}');
       return workouts;
     } catch (e) {
       print('Error creating workouts from GymVisual: $e');

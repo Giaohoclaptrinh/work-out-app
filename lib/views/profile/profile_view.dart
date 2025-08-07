@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../common/color_extension.dart';
 import '../../screens/auth_screen.dart';
+import '../../services/notification_service.dart';
 import '../../widgets/round_button.dart';
 import '../../widgets/setting_row.dart';
 import '../../widgets/title_subtitle_cell.dart';
@@ -43,41 +44,53 @@ class _ProfileViewState extends State<ProfileView> {
     {"image": "assets/img/p_setting.png", "name": "Setting", "tag": "7"},
   ];
 
-  List notificationsArr = [
-    {
-      "image": "assets/img/bell.png",
-      "title": "Workout Reminder",
-      "time": "2 hours ago",
-    },
-    {
-      "image": "assets/img/bell.png",
-      "title": "Meal Time",
-      "time": "4 hours ago",
-    },
-    {
-      "image": "assets/img/bell.png",
-      "title": "Water Reminder",
-      "time": "6 hours ago",
-    },
-  ];
+  List notificationsArr = [];
+  List activitiesArr = [];
 
-  List activitiesArr = [
-    {
-      "image": "assets/img/barbell.png",
-      "title": "Completed Upper Body Workout",
-      "time": "2 hours ago",
-    },
-    {
-      "image": "assets/img/barbell.png",
-      "title": "Logged Breakfast",
-      "time": "4 hours ago",
-    },
-    {
-      "image": "assets/img/barbell.png",
-      "title": "Achieved Daily Goal",
-      "time": "6 hours ago",
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadRealData();
+  }
+
+  Future<void> _loadRealData() async {
+    try {
+      final notificationService = NotificationService();
+
+      // Load notifications and activities
+      final notifications = await notificationService.getUserNotifications(
+        limit: 5,
+      );
+      final activities = await notificationService.getUserActivities(limit: 5);
+
+      // Format notifications for UI
+      final formattedNotifications = notifications.map((notification) {
+        return {
+          "image": "assets/img/bell.png",
+          "title": notification['title'] ?? 'Notification',
+          "time": NotificationService.formatTimeAgo(notification['timestamp']),
+        };
+      }).toList();
+
+      // Format activities for UI
+      final formattedActivities = activities.map((activity) {
+        return {
+          "image": "assets/img/barbell.png",
+          "title": activity['title'] ?? 'Activity',
+          "time": NotificationService.formatTimeAgo(activity['timestamp']),
+        };
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          notificationsArr = formattedNotifications;
+          activitiesArr = formattedActivities;
+        });
+      }
+    } catch (e) {
+      print('Error loading real data: $e');
+    }
+  }
 
   @override
   void dispose() {
