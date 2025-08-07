@@ -8,8 +8,8 @@ class NutritionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final val = double.tryParse(nObj["value"].toString()) ?? 1;
-    final maxVal = double.tryParse(nObj["max_value"].toString()) ?? 1;
+          final val = double.tryParse(nObj["value"]?.toString() ?? "1") ?? 1;
+      final maxVal = double.tryParse(nObj["max_value"]?.toString() ?? "1") ?? 1;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 15),
@@ -28,13 +28,13 @@ class NutritionRow extends StatelessWidget {
               const SizedBox(width: 4),
               if (nObj["image"] != null)
                 Image.asset(
-                  nObj["image"].toString(),
+                  nObj["image"]?.toString() ?? "assets/img/c_1.png",
                   width: 15,
                   height: 15,
                 ),
               const Spacer(),
               Text(
-                "${nObj["value"] ?? ""} ${nObj["unit_name"] ?? ""}",
+                "${nObj["value"]?.toString() ?? "0"} ${nObj["unit_name"]?.toString() ?? "g"}",
                 style: TextStyle(
                   color: TColor.gray,
                   fontSize: 11,

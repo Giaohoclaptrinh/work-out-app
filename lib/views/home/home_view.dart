@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../common/color_extension.dart';
-import '../../common/common_widgets.dart';
+import '../../widgets/round_button.dart';
+import '../../widgets/workout_row.dart';
+import '../../widgets/today_target_cell.dart';
+import '../../widgets/latest_activity_row.dart';
+import '../../widgets/notification_row.dart';
+import '../../widgets/what_train_row.dart';
+import '../../widgets/upcoming_workout_row.dart';
+import '../../widgets/exercises_row.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -11,9 +18,163 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  List<int> showingTooltipOnSpots = [];
+  List<int> showingTooltipOnSpots = [21];
 
-  List<FlSpot> allSpots = []; // Will be populated from real data
+  List<FlSpot> get allSpots => const [
+    FlSpot(0, 20),
+    FlSpot(1, 25),
+    FlSpot(2, 40),
+    FlSpot(3, 50),
+    FlSpot(4, 35),
+    FlSpot(5, 40),
+    FlSpot(6, 30),
+    FlSpot(7, 20),
+    FlSpot(8, 25),
+    FlSpot(9, 40),
+    FlSpot(10, 50),
+    FlSpot(11, 35),
+    FlSpot(12, 50),
+    FlSpot(13, 60),
+    FlSpot(14, 40),
+    FlSpot(15, 50),
+    FlSpot(16, 20),
+    FlSpot(17, 25),
+    FlSpot(18, 40),
+    FlSpot(19, 50),
+    FlSpot(20, 35),
+    FlSpot(21, 80),
+    FlSpot(22, 30),
+    FlSpot(23, 20),
+    FlSpot(24, 25),
+    FlSpot(25, 40),
+    FlSpot(26, 50),
+    FlSpot(27, 35),
+    FlSpot(28, 50),
+    FlSpot(29, 60),
+    FlSpot(30, 40),
+  ];
+
+  List lastWorkoutArr = [
+    {
+      "name": "Full Body Workout",
+      "image": "assets/img/Workout1.png",
+      "kcal": "180",
+      "time": "20",
+      "progress": 0.3,
+    },
+    {
+      "name": "Lower Body Workout",
+      "image": "assets/img/Workout2.png",
+      "kcal": "200",
+      "time": "30",
+      "progress": 0.4,
+    },
+    {
+      "name": "Ab Workout",
+      "image": "assets/img/Workout3.png",
+      "kcal": "300",
+      "time": "40",
+      "progress": 0.7,
+    },
+  ];
+
+  List waterArr = [
+    {"title": "6am - 8am", "subtitle": "600ml"},
+    {"title": "9am - 11am", "subtitle": "500ml"},
+    {"title": "11am - 2pm", "subtitle": "1000ml"},
+    {"title": "2pm - 4pm", "subtitle": "700ml"},
+    {"title": "4pm - now", "subtitle": "900ml"},
+  ];
+
+  List notificationsArr = [
+    {
+      "image": "assets/img/bell.png",
+      "title": "Workout Reminder",
+      "time": "2 hours ago",
+    },
+    {
+      "image": "assets/img/bell.png",
+      "title": "Meal Time",
+      "time": "4 hours ago",
+    },
+    {
+      "image": "assets/img/bell.png",
+      "title": "Water Reminder",
+      "time": "6 hours ago",
+    },
+  ];
+
+  List activitiesArr = [
+    {
+      "image": "assets/img/barbell.png",
+      "title": "Completed Upper Body Workout",
+      "time": "2 hours ago",
+    },
+    {
+      "image": "assets/img/barbell.png",
+      "title": "Logged Breakfast",
+      "time": "4 hours ago",
+    },
+    {
+      "image": "assets/img/barbell.png",
+      "title": "Achieved Daily Goal",
+      "time": "6 hours ago",
+    },
+  ];
+
+  List tipsArr = [
+    {
+      "title": "How to do a proper push-up",
+      "exercises": "3 exercises",
+      "time": "5 min",
+      "image": "assets/img/Workout1.png",
+    },
+    {
+      "title": "Best exercises for abs",
+      "exercises": "4 exercises",
+      "time": "8 min",
+      "image": "assets/img/Workout2.png",
+    },
+    {
+      "title": "Cardio workout guide",
+      "exercises": "5 exercises",
+      "time": "12 min",
+      "image": "assets/img/Workout3.png",
+    },
+  ];
+
+  List upcomingWorkoutArr = [
+    {
+      "image": "assets/img/Workout1.png",
+      "title": "Full Body Workout",
+      "time": "Today, 3:00 PM",
+      "status": "pending",
+    },
+    {
+      "image": "assets/img/Workout2.png",
+      "title": "Lower Body Focus",
+      "time": "Tomorrow, 9:00 AM",
+      "status": "pending",
+    },
+  ];
+
+  List exercisesArr = [
+    {
+      "image": "assets/img/barbell.png",
+      "title": "Bench Press",
+      "value": "3 sets x 12 reps",
+    },
+    {
+      "image": "assets/img/barbell.png",
+      "title": "Squats",
+      "value": "4 sets x 15 reps",
+    },
+    {
+      "image": "assets/img/barbell.png",
+      "title": "Deadlift",
+      "value": "3 sets x 10 reps",
+    },
+  ];
 
   Widget bottomTitleWidgets(double value, TitleMeta meta, double chartWidth) {
     if (value % 1 != 0) return Container();
@@ -72,7 +233,7 @@ class _HomeViewState extends State<HomeView> {
                           style: TextStyle(color: TColor.gray, fontSize: 12),
                         ),
                         Text(
-                          "User", // Use real user name
+                          "Stefani Wong",
                           style: TextStyle(
                             color: TColor.black,
                             fontSize: 20,
@@ -83,33 +244,103 @@ class _HomeViewState extends State<HomeView> {
                     ),
                     IconButton(
                       onPressed: () {},
-                      icon: Icon(
-                        Icons.notifications_outlined,
-                        color: TColor.black,
+                      icon: Image.asset(
+                        "assets/img/notification_active.png",
+                        width: 25,
+                        height: 25,
+                        fit: BoxFit.fitHeight,
                       ),
                     ),
                   ],
                 ),
                 SizedBox(height: media.width * 0.05),
 
-                // BMI Card Placeholder
+                // BMI Card
                 Container(
                   height: media.width * 0.4,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(colors: TColor.primaryG),
                     borderRadius: BorderRadius.circular(media.width * 0.075),
                   ),
-                  child: Center(
-                    child: Text(
-                      "BMI Data will appear here",
-                      style: TextStyle(color: TColor.white, fontSize: 16),
-                    ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Image.asset(
+                        "assets/img/bg_dots.png",
+                        height: media.width * 0.4,
+                        width: double.maxFinite,
+                        fit: BoxFit.fitHeight,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 25,
+                          horizontal: 25,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "BMI (Body Mass Index)",
+                                  style: TextStyle(
+                                    color: TColor.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                Text(
+                                  "You have a normal weight",
+                                  style: TextStyle(
+                                    color: TColor.white.withOpacity(0.7),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                SizedBox(height: media.width * 0.05),
+                                SizedBox(
+                                  width: 120,
+                                  height: 35,
+                                  child: RoundButton(
+                                    title: "View More",
+                                    type: RoundButtonType.bgSGradient,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w400,
+                                    onPressed: () {},
+                                  ),
+                                ),
+                              ],
+                            ),
+                            AspectRatio(
+                              aspectRatio: 1,
+                              child: PieChart(
+                                PieChartData(
+                                  pieTouchData: PieTouchData(
+                                    touchCallback:
+                                        (
+                                          FlTouchEvent event,
+                                          pieTouchResponse,
+                                        ) {},
+                                  ),
+                                  startDegreeOffset: 250,
+                                  borderData: FlBorderData(show: false),
+                                  sectionsSpace: 1,
+                                  centerSpaceRadius: 0,
+                                  sections: showingSections(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
                 SizedBox(height: media.width * 0.05),
 
-                // Today Target Placeholder
+                // Today Target
                 Container(
                   padding: const EdgeInsets.symmetric(
                     vertical: 15,
@@ -135,7 +366,9 @@ class _HomeViewState extends State<HomeView> {
                         height: 25,
                         child: RoundButton(
                           title: "Check",
-                          fontSize: 10,
+                          type: RoundButtonType.bgGradient,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
                           onPressed: () {},
                         ),
                       ),
@@ -144,6 +377,50 @@ class _HomeViewState extends State<HomeView> {
                 ),
 
                 SizedBox(height: media.width * 0.05),
+
+                // Today's Targets
+                Text(
+                  "Today's Targets",
+                  style: TextStyle(
+                    color: TColor.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 80,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    children: [
+                      TodayTargetCell(
+                        icon: "assets/img/burn.png",
+                        value: "320",
+                        title: "Calories",
+                      ),
+                      const SizedBox(width: 15),
+                      TodayTargetCell(
+                        icon: "assets/img/bottle.png",
+                        value: "6.8L",
+                        title: "Water",
+                      ),
+                      const SizedBox(width: 15),
+                      TodayTargetCell(
+                        icon: "assets/img/bed.png",
+                        value: "8h 20m",
+                        title: "Sleep",
+                      ),
+                      const SizedBox(width: 15),
+                      TodayTargetCell(
+                        icon: "assets/img/foot.png",
+                        value: "2400",
+                        title: "Steps",
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
 
                 // Activity Status (Chart)
                 Text(
@@ -155,12 +432,65 @@ class _HomeViewState extends State<HomeView> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Container(
-                  height: 200,
-                  padding: const EdgeInsets.only(left: 15),
-                  child: allSpots.isEmpty
-                      ? Center(child: Text("No activity data"))
-                      : LineChart(
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(25),
+                  child: Container(
+                    height: media.width * 0.4,
+                    width: double.maxFinite,
+                    decoration: BoxDecoration(
+                      color: TColor.primaryColor2.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: Stack(
+                      alignment: Alignment.topLeft,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 20,
+                            horizontal: 20,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Heart Rate",
+                                style: TextStyle(
+                                  color: TColor.black,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              ShaderMask(
+                                blendMode: BlendMode.srcIn,
+                                shaderCallback: (bounds) {
+                                  return LinearGradient(
+                                    colors: TColor.primaryG,
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ).createShader(
+                                    Rect.fromLTRB(
+                                      0,
+                                      0,
+                                      bounds.width,
+                                      bounds.height,
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  "78 BPM",
+                                  style: TextStyle(
+                                    color: TColor.white.withOpacity(0.7),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        LineChart(
                           LineChartData(
                             showingTooltipIndicators: showingTooltipOnSpots.map(
                               (index) {
@@ -177,48 +507,48 @@ class _HomeViewState extends State<HomeView> {
                             lineBarsData: [
                               LineChartBarData(
                                 spots: allSpots,
-                                isCurved: true,
-                                gradient: LinearGradient(
-                                  colors: TColor.primaryG,
-                                ),
-                                barWidth: 4,
+                                isCurved: false,
+                                barWidth: 3,
                                 belowBarData: BarAreaData(
                                   show: true,
                                   gradient: LinearGradient(
-                                    colors: TColor.primaryG
-                                        .map((e) => e.withOpacity(0.3))
-                                        .toList(),
+                                    colors: [
+                                      TColor.primaryColor2.withOpacity(0.4),
+                                      TColor.primaryColor1.withOpacity(0.1),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
                                   ),
+                                ),
+                                dotData: FlDotData(show: false),
+                                gradient: LinearGradient(
+                                  colors: TColor.primaryG,
                                 ),
                               ),
                             ],
                             minY: 0,
-                            maxY: 100,
-                            titlesData: FlTitlesData(
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  reservedSize: 32,
-                                  interval: 1,
-                                  getTitlesWidget: (value, meta) =>
-                                      bottomTitleWidgets(value, meta, 0),
-                                ),
-                              ),
-                            ),
+                            maxY: 130,
+                            titlesData: FlTitlesData(show: false),
                             gridData: FlGridData(show: false),
-                            borderData: FlBorderData(show: false),
+                            borderData: FlBorderData(
+                              show: true,
+                              border: Border.all(color: Colors.transparent),
+                            ),
                           ),
                         ),
+                      ],
+                    ),
+                  ),
                 ),
 
                 SizedBox(height: media.width * 0.05),
 
-                // Latest Workout List Placeholder
+                // Latest Workouts
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Latest Workout",
+                      "Latest Workouts",
                       style: TextStyle(
                         color: TColor.black,
                         fontSize: 16,
@@ -235,7 +565,80 @@ class _HomeViewState extends State<HomeView> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                Center(child: Text("No workouts yet")),
+                ...lastWorkoutArr.map((workout) => WorkoutRow(wObj: workout)),
+                const SizedBox(height: 20),
+
+                // What to Train
+                Text(
+                  "What to Train",
+                  style: TextStyle(
+                    color: TColor.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...tipsArr.map((tip) => WhatTrainRow(wObj: tip)),
+                const SizedBox(height: 20),
+
+                // Upcoming Workouts
+                Text(
+                  "Upcoming Workouts",
+                  style: TextStyle(
+                    color: TColor.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...upcomingWorkoutArr.map(
+                  (workout) => UpcomingWorkoutRow(wObj: workout),
+                ),
+                const SizedBox(height: 20),
+
+                // Recent Activities
+                Text(
+                  "Recent Activities",
+                  style: TextStyle(
+                    color: TColor.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...activitiesArr.map(
+                  (activity) => LatestActivityRow(wObj: activity),
+                ),
+                const SizedBox(height: 20),
+
+                // Recent Notifications
+                Text(
+                  "Recent Notifications",
+                  style: TextStyle(
+                    color: TColor.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...notificationsArr.map(
+                  (notification) => NotificationRow(nObj: notification),
+                ),
+                const SizedBox(height: 20),
+
+                // Popular Exercises
+                Text(
+                  "Popular Exercises",
+                  style: TextStyle(
+                    color: TColor.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...exercisesArr.map(
+                  (exercise) => ExercisesRow(eObj: exercise, onPressed: () {}),
+                ),
 
                 SizedBox(height: media.width * 0.1),
               ],
@@ -247,6 +650,40 @@ class _HomeViewState extends State<HomeView> {
   }
 
   List<PieChartSectionData> showingSections() {
-    return []; // Empty until actual BMI data is provided
+    return [
+      PieChartSectionData(
+        color: TColor.primaryColor1,
+        value: 35,
+        title: '',
+        radius: 80,
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      PieChartSectionData(
+        color: TColor.primaryColor2,
+        value: 25,
+        title: '',
+        radius: 80,
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      PieChartSectionData(
+        color: TColor.secondaryColor1,
+        value: 40,
+        title: '',
+        radius: 80,
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+    ];
   }
 }

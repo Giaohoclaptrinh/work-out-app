@@ -15,40 +15,41 @@ class ExercisesRow extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(5),
             child: Image.asset(
-              eObj["image"].toString(),
+              eObj["image"]?.toString() ?? "assets/img/barbell.png",
               width: 60,
               height: 60,
               fit: BoxFit.cover,
             ),
           ),
-          const SizedBox(
-            width: 15,
-          ),
+          const SizedBox(width: 15),
           Expanded(
-              child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                eObj["title"].toString(),
-                style: TextStyle(color: TColor.black, fontSize: 14, fontWeight: FontWeight.w500),
-              ),
-              Text(
-                eObj["value"].toString(),
-                style: TextStyle(
-                  color: TColor.gray,
-                  fontSize: 12,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  eObj["title"]?.toString() ?? "Exercise",
+                  style: TextStyle(
+                    color: TColor.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
-          )),
+                Text(
+                  eObj["value"]?.toString() ?? "Strength",
+                  style: TextStyle(color: TColor.gray, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
           IconButton(
-              onPressed: onPressed,
-              icon: Image.asset(
-                "assets/img/next_go.png",
-                width: 20,
-                height: 20,
-                fit: BoxFit.contain,
-              ))
+            onPressed: onPressed,
+            icon: Image.asset(
+              "assets/img/next_go.png",
+              width: 20,
+              height: 20,
+              fit: BoxFit.contain,
+            ),
+          ),
         ],
       ),
     );

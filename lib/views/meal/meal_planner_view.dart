@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../common/color_extension.dart';
 import '../../common/common_widgets.dart';
+import '../../widgets/meal_category_cell.dart';
+import '../../widgets/today_meal_row.dart';
+import '../../widgets/popular_meal_row.dart';
+import '../../widgets/find_eat_cell.dart';
+import '../../widgets/meal_recommed_cell.dart';
 
 class MealPlannerView extends StatefulWidget {
   const MealPlannerView({super.key});
@@ -12,21 +17,86 @@ class MealPlannerView extends StatefulWidget {
 
 class _MealPlannerViewState extends State<MealPlannerView> {
   List<FlSpot> nutritionSpots = [];
-
   List<Map<String, dynamic>> mealArr = [];
-
   List<Map<String, dynamic>> todayMealArr = [];
+  List<Map<String, dynamic>> popularMeals = [];
+  List<Map<String, dynamic>> recommendedMeals = [];
+  bool _disposed = false;
 
   @override
   void initState() {
     super.initState();
+    _initializeData();
+  }
 
-    // TODO: Replace with Firebase or API data
-    nutritionSpots = []; // Clear sample data
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 
-    mealArr = []; // Clear sample meal categories
+  void _initializeData() {
+    if (_disposed) return;
 
-    todayMealArr = []; // Clear today's sample meals
+    // Xóa dữ liệu mẫu nutrition chart
+    nutritionSpots = [];
+
+    // Meal Schedule
+    mealArr = [
+      {'name': 'Breakfast', 'time': '08:00 AM', 'image': 'assets/img/m_1.png'},
+      {'name': 'Lunch', 'time': '12:00 PM', 'image': 'assets/img/m_2.png'},
+      {'name': 'Snacks', 'time': '03:00 PM', 'image': 'assets/img/m_3.png'},
+      {'name': 'Dinner', 'time': '07:00 PM', 'image': 'assets/img/m_4.png'},
+    ];
+
+    todayMealArr = [
+      {
+        'name': 'Oatmeal with Berries',
+        'time': '08:00 AM',
+        'calories': '320 kcal',
+        'image': 'assets/img/m_1.png',
+      },
+      {
+        'name': 'Grilled Chicken Salad',
+        'time': '12:00 PM',
+        'calories': '450 kcal',
+        'image': 'assets/img/m_2.png',
+      },
+    ];
+
+    popularMeals = [
+      {
+        'name': 'Protein Bowl',
+        'calories': '380 kcal',
+        'time': '25 min',
+        'image': 'assets/img/m_1.png',
+      },
+      {
+        'name': 'Quinoa Salad',
+        'calories': '320 kcal',
+        'time': '20 min',
+        'image': 'assets/img/m_2.png',
+      },
+    ];
+
+    recommendedMeals = [
+      {
+        'name': 'Avocado Toast',
+        'calories': '280 kcal',
+        'time': '10 min',
+        'image': 'assets/img/m_3.png',
+      },
+      {
+        'name': 'Smoothie Bowl',
+        'calories': '350 kcal',
+        'time': '15 min',
+        'image': 'assets/img/m_4.png',
+      },
+    ];
+
+    if (!_disposed) {
+      setState(() {});
+    }
   }
 
   @override
@@ -54,276 +124,232 @@ class _MealPlannerViewState extends State<MealPlannerView> {
         ],
       ),
       backgroundColor: TColor.white,
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// Nutrition Chart
-            if (nutritionSpots.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.symmetric(
-                  vertical: 10,
-                  horizontal: 20,
+      body: RefreshIndicator(
+        onRefresh: () async => _initializeData(),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// Nutrition Chart
+              if (nutritionSpots.isNotEmpty) _buildNutritionChart(),
+
+              /// Meal Schedule Box
+              _buildMealScheduleBox(),
+
+              /// Meal Categories
+              if (mealArr.isNotEmpty) _buildMealCategories(),
+
+              /// Today Meals
+              if (todayMealArr.isNotEmpty)
+                _buildSection(
+                  "Today Meals",
+                  todayMealArr.map((meal) => TodayMealRow(mObj: meal)).toList(),
                 ),
-                padding: const EdgeInsets.all(15),
-                height: 200,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: TColor.primaryG),
-                  borderRadius: BorderRadius.circular(15),
+
+              /// Popular Meals
+              if (popularMeals.isNotEmpty)
+                _buildSection(
+                  "Popular Meals",
+                  popularMeals
+                      .map((meal) => PopularMealRow(mObj: meal))
+                      .toList(),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Daily Nutrition",
-                      style: TextStyle(
-                        color: TColor.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "Calories consumed today",
-                      style: TextStyle(
-                        color: TColor.white.withOpacity(0.7),
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Expanded(
-                      child: LineChart(
-                        LineChartData(
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: nutritionSpots,
-                              isCurved: true,
-                              color: TColor.white,
-                              barWidth: 3,
-                              isStrokeCapRound: true,
-                              belowBarData: BarAreaData(
-                                show: true,
-                                color: TColor.white.withOpacity(0.2),
-                              ),
-                            ),
-                          ],
-                          minY: 1000,
-                          maxY: 3000,
-                          titlesData: const FlTitlesData(show: false),
-                          gridData: const FlGridData(show: false),
-                          borderData: FlBorderData(show: false),
+
+              /// Recommended Meals
+              if (recommendedMeals.isNotEmpty)
+                _buildSection(
+                  "Recommended",
+                  recommendedMeals
+                      .asMap()
+                      .entries
+                      .map(
+                        (entry) => MealRecommendCell(
+                          index: entry.key,
+                          fObj: entry.value,
                         ),
-                      ),
-                    ),
-                  ],
+                      )
+                      .toList(),
                 ),
-              ),
 
-            /// Meal Schedule Box
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-              padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-              decoration: BoxDecoration(
-                color: TColor.mealPrimary.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Daily Meal Schedule",
-                    style: TextStyle(
-                      color: TColor.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 70,
-                    height: 25,
-                    child: RoundButton(
-                      title: "Check",
-                      fontSize: 10,
-                      onPressed: () {},
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            /// Meal Categories
-            if (mealArr.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      "Meal Categories",
-                      style: TextStyle(
-                        color: TColor.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 120,
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      scrollDirection: Axis.horizontal,
-                      itemCount: mealArr.length,
-                      itemBuilder: (context, index) {
-                        var mObj = mealArr[index];
-                        return Container(
-                          margin: const EdgeInsets.symmetric(
-                            vertical: 8,
-                            horizontal: 5,
-                          ),
-                          width: 100,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: TColor.secondaryG),
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _getMealIcon(mObj["name"]),
-                                color: TColor.white,
-                                size: 30,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                mObj["name"] ?? '',
-                                style: TextStyle(
-                                  color: TColor.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              Text(
-                                mObj["time"] ?? '',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: TColor.white.withOpacity(0.7),
-                                  fontSize: 8,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-
-            /// Today Meals
-            if (todayMealArr.isNotEmpty)
+              /// Find What to Eat
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 10,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Today Meals",
-                      style: TextStyle(
-                        color: TColor.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {},
-                      child: Text(
-                        "See More",
-                        style: TextStyle(color: TColor.gray, fontSize: 14),
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  "Find What to Eat",
+                  style: TextStyle(
+                    color: TColor.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-
-            if (todayMealArr.isNotEmpty)
-              ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                physics: const NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                itemCount: todayMealArr.length,
-                itemBuilder: (context, index) {
-                  var mObj = todayMealArr[index];
-                  return Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(5),
-                          child: Container(
-                            height: 50,
-                            width: 50,
-                            color: TColor.lightGray,
-                            child: Icon(
-                              Icons.restaurant,
-                              color: TColor.mealPrimary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                mObj["name"] ?? '',
-                                style: TextStyle(
-                                  color: TColor.black,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                mObj["time"] ?? '',
-                                style: TextStyle(
-                                  color: TColor.gray,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: Icon(Icons.more_horiz, color: TColor.gray),
-                        ),
-                      ],
-                    ),
-                  );
+              FindEatCell(
+                index: 0,
+                fObj: {
+                  'name': 'Search for meals',
+                  'number': 'Find healthy recipes',
+                  'image': 'assets/img/m_1.png',
                 },
               ),
 
-            const SizedBox(height: 20),
-          ],
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  IconData _getMealIcon(String? mealName) {
-    switch (mealName?.toLowerCase()) {
-      case 'breakfast':
-        return Icons.free_breakfast;
-      case 'lunch':
-        return Icons.lunch_dining;
-      case 'snacks':
-        return Icons.cookie;
-      case 'dinner':
-        return Icons.dinner_dining;
-      default:
-        return Icons.restaurant;
-    }
+  Widget _buildNutritionChart() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      padding: const EdgeInsets.all(15),
+      height: 200,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: TColor.primaryG),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Daily Nutrition",
+            style: TextStyle(
+              color: TColor.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Calories consumed today",
+            style: TextStyle(
+              color: TColor.white.withOpacity(0.7),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: nutritionSpots,
+                    isCurved: true,
+                    color: TColor.white,
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: TColor.white.withOpacity(0.2),
+                    ),
+                  ),
+                ],
+                minY: 1000,
+                maxY: 3000,
+                titlesData: const FlTitlesData(show: false),
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMealScheduleBox() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+      decoration: BoxDecoration(
+        color: TColor.mealPrimary.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            "Daily Meal Schedule",
+            style: TextStyle(
+              color: TColor.black,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(
+            width: 70,
+            height: 25,
+            child: RoundButton(title: "Check", fontSize: 10, onPressed: () {}),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMealCategories() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            "Meal Categories",
+            style: TextStyle(
+              color: TColor.black,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            scrollDirection: Axis.horizontal,
+            itemCount: mealArr.length,
+            itemBuilder: (context, index) {
+              var mObj = mealArr[index];
+              return MealCategoryCell(index: index, cObj: mObj);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSection(String title, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: TColor.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              TextButton(
+                onPressed: () {},
+                child: Text(
+                  "See More",
+                  style: TextStyle(color: TColor.gray, fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+        ),
+        ...children,
+      ],
+    );
   }
 }

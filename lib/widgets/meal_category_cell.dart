@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import 'package:workout_app/common/color_extension.dart';
@@ -15,50 +14,51 @@ class MealCategoryCell extends StatelessWidget {
       margin: const EdgeInsets.all(4),
       width: 80,
       decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isEvent
-                ? [
-                    TColor.primaryColor2.withOpacity(0.5),
-                    TColor.primaryColor1.withOpacity(0.5)
-                  ]
-                : [
-                    TColor.secondaryColor2.withOpacity(0.5),
-                    TColor.secondaryColor1.withOpacity(0.5)
-                  ],
-          ),
-          borderRadius:  BorderRadius.circular(15)),
+        gradient: LinearGradient(
+          colors: isEvent
+              ? [
+                  TColor.primaryColor2.withOpacity(0.5),
+                  TColor.primaryColor1.withOpacity(0.5),
+                ]
+              : [
+                  TColor.secondaryColor2.withOpacity(0.5),
+                  TColor.secondaryColor1.withOpacity(0.5),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(15),
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          
           ClipRRect(
-            borderRadius: BorderRadius.circular(17.5) ,
+            borderRadius: BorderRadius.circular(17.5),
             child: Container(
-              
               decoration: BoxDecoration(
-                  color: TColor.white,
-                  borderRadius:  BorderRadius.circular(17.5)),
-          
+                color: TColor.white,
+                borderRadius: BorderRadius.circular(17.5),
+              ),
+
               child: Image.asset(
-                  cObj["image"].toString(),
-                  width: 35,
-                  height: 35,
-                  fit: BoxFit.contain,
-                ),),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4,horizontal: 8),
-            child: Text(
-              cObj["name"],
-              maxLines: 1,
-              style: TextStyle(
-                  color: TColor.black,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500),
+                cObj["image"]?.toString() ?? "assets/img/c_1.png",
+                width: 35,
+                height: 35,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
-        
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+            child: Text(
+              cObj["name"]?.toString() ?? "Category",
+              maxLines: 1,
+              style: TextStyle(
+                color: TColor.black,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
         ],
       ),
     );

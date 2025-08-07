@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../models/exercise.dart';
 
 class GymVisualService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // GymVisual exercise data structure
   static const Map<String, dynamic> gymVisualExercises = {
@@ -101,7 +100,7 @@ class GymVisualService {
       }
 
       await batch.commit();
-      print(
+      debugPrint(
         'Successfully imported ${gymVisualExercises.length} GymVisual exercises',
       );
     } catch (e) {

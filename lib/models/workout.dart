@@ -93,46 +93,50 @@ class WorkoutExercise {
 class Workout {
   final String id;
   final String name;
-  final String? description;
-  final List<WorkoutExercise> exercises;
-  final DateTime? startTime;
-  final DateTime? endTime;
-  final bool completed;
+  final String description;
+  final String image;
+  final String category;
+  final int duration; // minutes
+  final int calories;
+  final String difficulty;
+  final List<String> muscleGroups;
+  final List<WorkoutStep> steps;
+  final bool isFavorite;
+  final DateTime? completedAt;
 
-  const Workout({
+  Workout({
     required this.id,
     required this.name,
-    this.description,
-    required this.exercises,
-    this.startTime,
-    this.endTime,
-    this.completed = false,
+    required this.description,
+    required this.image,
+    required this.category,
+    required this.duration,
+    required this.calories,
+    required this.difficulty,
+    required this.muscleGroups,
+    required this.steps,
+    this.isFavorite = false,
+    this.completedAt,
   });
 
-  Duration? get duration {
-    if (startTime != null && endTime != null) {
-      return endTime!.difference(startTime!);
-    }
-    return null;
-  }
-
-  Workout copyWith({
-    String? id,
-    String? name,
-    String? description,
-    List<WorkoutExercise>? exercises,
-    DateTime? startTime,
-    DateTime? endTime,
-    bool? completed,
-  }) {
+  factory Workout.fromJson(Map<String, dynamic> json) {
     return Workout(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      description: description ?? this.description,
-      exercises: exercises ?? this.exercises,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
-      completed: completed ?? this.completed,
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      description: json['description'] ?? '',
+      image: json['image'] ?? '',
+      category: json['category'] ?? '',
+      duration: json['duration'] ?? 0,
+      calories: json['calories'] ?? 0,
+      difficulty: json['difficulty'] ?? 'Beginner',
+      muscleGroups: List<String>.from(json['muscleGroups'] ?? []),
+      steps: (json['steps'] as List? ?? [])
+          .map((step) => WorkoutStep.fromJson(step))
+          .toList(),
+      isFavorite: json['isFavorite'] ?? false,
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'])
+          : null,
     );
   }
 
@@ -141,33 +145,89 @@ class Workout {
       'id': id,
       'name': name,
       'description': description,
-      'exercises': exercises.map((ex) => ex.toJson()).toList(),
-      'startTime': startTime?.toIso8601String(),
-      'endTime': endTime?.toIso8601String(),
-      'completed': completed,
+      'image': image,
+      'category': category,
+      'duration': duration,
+      'calories': calories,
+      'difficulty': difficulty,
+      'muscleGroups': muscleGroups,
+      'steps': steps.map((step) => step.toJson()).toList(),
+      'isFavorite': isFavorite,
+      'completedAt': completedAt?.toIso8601String(),
     };
   }
 
-  factory Workout.fromJson(Map<String, dynamic> json) {
+  Workout copyWith({
+    String? id,
+    String? name,
+    String? description,
+    String? image,
+    String? category,
+    int? duration,
+    int? calories,
+    String? difficulty,
+    List<String>? muscleGroups,
+    List<WorkoutStep>? steps,
+    bool? isFavorite,
+    DateTime? completedAt,
+  }) {
     return Workout(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String?,
-      exercises: (json['exercises'] as List)
-          .map(
-            (exJson) =>
-                WorkoutExercise.fromJson(exJson as Map<String, dynamic>),
-          )
-          .toList(),
-      startTime: json['startTime'] != null
-          ? DateTime.parse(json['startTime'] as String)
-          : null,
-      endTime: json['endTime'] != null
-          ? DateTime.parse(json['endTime'] as String)
-          : null,
-      completed: json['completed'] as bool? ?? false,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      image: image ?? this.image,
+      category: category ?? this.category,
+      duration: duration ?? this.duration,
+      calories: calories ?? this.calories,
+      difficulty: difficulty ?? this.difficulty,
+      muscleGroups: muscleGroups ?? this.muscleGroups,
+      steps: steps ?? this.steps,
+      isFavorite: isFavorite ?? this.isFavorite,
+      completedAt: completedAt ?? this.completedAt,
     );
   }
 }
 
+class WorkoutStep {
+  final int stepNumber;
+  final String title;
+  final String description;
+  final String? image;
+  final int duration; // seconds
+  final int? reps;
+  final int? sets;
 
+  WorkoutStep({
+    required this.stepNumber,
+    required this.title,
+    required this.description,
+    this.image,
+    required this.duration,
+    this.reps,
+    this.sets,
+  });
+
+  factory WorkoutStep.fromJson(Map<String, dynamic> json) {
+    return WorkoutStep(
+      stepNumber: json['stepNumber'] ?? 0,
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      image: json['image'],
+      duration: json['duration'] ?? 0,
+      reps: json['reps'],
+      sets: json['sets'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'stepNumber': stepNumber,
+      'title': title,
+      'description': description,
+      'image': image,
+      'duration': duration,
+      'reps': reps,
+      'sets': sets,
+    };
+  }
+}

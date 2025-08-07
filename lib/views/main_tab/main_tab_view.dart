@@ -3,7 +3,7 @@ import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.da
 
 import '../../common/color_extension.dart';
 import '../home/home_view.dart';
-import '../workout/workout_tracker_view.dart';
+import '../../screens/workout_tracker_screen.dart';
 import '../meal/meal_planner_view.dart';
 import '../profile/profile_view.dart';
 
@@ -83,11 +83,11 @@ class _MainTabViewState extends State<MainTabView> {
             selectedTabIndex = index;
           });
         },
-        children: const [
-          HomeView(),
-          WorkoutTrackerView(),
-          MealPlannerView(),
-          ProfileTabView(),
+        children: [
+          const HomeView(),
+          const WorkoutTrackerScreen(),
+          const MealPlannerView(),
+          const ProfileTabView(),
         ],
       ),
     );
@@ -123,7 +123,7 @@ class ProfileTabView extends StatelessWidget {
           ),
         ],
       ),
-      body:  ProfileView(),
+      body: ProfileView(),
     );
   }
 }

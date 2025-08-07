@@ -19,15 +19,23 @@ class Exercise {
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
     return Exercise(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      category: json['category'] as String,
-      imageUrl: json['imageUrl'] as String?,
-      muscleGroups: List<String>.from(json['muscleGroups'] as List),
-      instructions: json['instructions'] as String,
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      category: json['category']?.toString() ?? '',
+      imageUrl: json['imageUrl']?.toString(),
+      muscleGroups:
+          (json['muscleGroups'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      instructions: json['instructions']?.toString() ?? '',
     );
   }
+
+  String? get difficulty => null;
+
+  String? get equipment => null;
 
   Map<String, dynamic> toJson() {
     return {

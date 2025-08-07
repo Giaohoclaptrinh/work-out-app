@@ -22,7 +22,7 @@ class MealFoodScheduleRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10)),
                   alignment: Alignment.center,
                 child: Image.asset(
-                  mObj["image"].toString(),
+                  mObj["image"]?.toString() ?? "assets/img/m_1.png",
                   width: 40,
                   height: 40,
                   fit: BoxFit.contain,
@@ -37,14 +37,14 @@ class MealFoodScheduleRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    mObj["name"].toString(),
+                    mObj["name"]?.toString() ?? "Meal",
                     style: TextStyle(
                         color: TColor.black,
                         fontSize: 12,
                         fontWeight: FontWeight.w700),
                   ),
                   Text(
-                    mObj["time"].toString(),
+                    mObj["time"]?.toString() ?? "No time",
                     style: TextStyle(
                       color: TColor.gray,
                       fontSize: 10,

@@ -7,54 +7,53 @@ class LatestActivityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     return Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-       
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: Image.asset(
-                wObj["image"].toString(),
-                width: 50,
-                height: 50,
-                fit: BoxFit.cover,
-              ),
-            ),
+      margin: const EdgeInsets.symmetric(vertical: 8),
 
-           const SizedBox(width: 15,),
-            Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: Image.asset(
+              wObj["image"]?.toString() ?? "assets/img/barbell.png",
+              width: 50,
+              height: 50,
+              fit: BoxFit.cover,
+            ),
+          ),
+
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                  Text(
-                  wObj["title"].toString(),
+                Text(
+                  wObj["title"]?.toString() ?? "Activity",
                   style: TextStyle(
-                      color: TColor.black,
-                      fontSize: 12, fontWeight: FontWeight.w500),
+                    color: TColor.black,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
 
                 Text(
-                 wObj["time"].toString(),
-                  style: TextStyle(
-                      color: TColor.gray,
-                      fontSize: 10,),
+                  wObj["time"]?.toString() ?? "Just now",
+                  style: TextStyle(color: TColor.gray, fontSize: 10),
                 ),
-
-               
-
               ],
-            )),
-            IconButton(
-                onPressed: () {},
-                icon: Image.asset(
-                  "assets/img/sub_menu.png",
-                  width: 12,
-                  height: 12,
-                  fit: BoxFit.contain,
-                ))
-          ],
-        ));
+            ),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: Image.asset(
+              "assets/img/More_V.png",
+              width: 12,
+              height: 12,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

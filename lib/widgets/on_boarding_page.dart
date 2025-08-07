@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import 'package:workout_app/common/color_extension.dart';
@@ -9,10 +8,8 @@ class OnBoardingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-     var media = MediaQuery.of(context).size;
-    return 
-    
-    SizedBox(
+    var media = MediaQuery.of(context).size;
+    return SizedBox(
       width: media.width,
       height: media.height,
       child: Column(
@@ -20,27 +17,26 @@ class OnBoardingPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Image.asset(
-            pObj["image"].toString(),
+            pObj["image"]?.toString() ?? "assets/img/on_1.png",
             width: media.width,
             fit: BoxFit.fitWidth,
           ),
-          SizedBox(
-            height: media.width * 0.1,
-          ),
+          SizedBox(height: media.width * 0.1),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Text(
-              pObj["title"].toString(),
+              pObj["title"]?.toString() ?? "Welcome",
               style: TextStyle(
-                  color: TColor.black,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700),
+                color: TColor.black,
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Text(
-              pObj["subtitle"].toString(),
+              pObj["subtitle"]?.toString() ?? "Get started with your fitness journey",
               style: TextStyle(color: TColor.gray, fontSize: 14),
             ),
           ),

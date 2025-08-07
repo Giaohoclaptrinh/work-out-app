@@ -18,7 +18,9 @@ class _TodaySleepScheduleRowState extends State<TodaySleepScheduleRow> {
   Widget build(BuildContext context) {
     final image = widget.sObj["image"]?.toString() ?? "";
     final name = widget.sObj["name"]?.toString() ?? "";
-    final time = getStringDateToOtherFormate(widget.sObj["time"]?.toString() ?? "");
+    final time = getStringDateToOtherFormate(
+      widget.sObj["time"]?.toString() ?? "",
+    );
     final duration = widget.sObj["duration"]?.toString() ?? "";
 
     return Container(
@@ -27,21 +29,14 @@ class _TodaySleepScheduleRowState extends State<TodaySleepScheduleRow> {
       decoration: BoxDecoration(
         color: TColor.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 2),
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
       ),
       child: Row(
         children: [
           const SizedBox(width: 15),
           ClipRRect(
             borderRadius: BorderRadius.circular(30),
-            child: Image.asset(
-              image,
-              width: 40,
-              height: 40,
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset(image, width: 40, height: 40, fit: BoxFit.cover),
           ),
           const SizedBox(width: 15),
           Expanded(
@@ -60,10 +55,7 @@ class _TodaySleepScheduleRowState extends State<TodaySleepScheduleRow> {
                     ),
                     Text(
                       ", $time",
-                      style: TextStyle(
-                        color: TColor.black,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: TColor.black, fontSize: 12),
                     ),
                   ],
                 ),
@@ -106,11 +98,19 @@ class _TodaySleepScheduleRowState extends State<TodaySleepScheduleRow> {
                     indicatorSize: const Size.square(30.0),
                     animationDuration: const Duration(milliseconds: 200),
                     animationCurve: Curves.linear,
-                    onChanged: (b) => setState(() => positive = b),
+                    onChanged: (b) {
+                      if (mounted) {
+                        setState(() => positive = b);
+                      }
+                    },
                     iconBuilder: (context, local, global) {
                       return const SizedBox(); // Không hiện icon trong nút
                     },
-                    onTap: (b) => setState(() => positive = !positive),
+                    onTap: (b) {
+              if (mounted) {
+                setState(() => positive = !positive);
+              }
+            },
                     iconsTappable: false,
                     wrapperBuilder: (context, global, child) {
                       return Stack(
@@ -122,8 +122,12 @@ class _TodaySleepScheduleRowState extends State<TodaySleepScheduleRow> {
                             height: 30.0,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(colors: TColor.secondaryG),
-                                borderRadius: const BorderRadius.all(Radius.circular(50.0)),
+                                gradient: LinearGradient(
+                                  colors: TColor.secondaryG,
+                                ),
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(50.0),
+                                ),
                               ),
                             ),
                           ),
@@ -137,14 +141,16 @@ class _TodaySleepScheduleRowState extends State<TodaySleepScheduleRow> {
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             color: TColor.white,
-                            borderRadius: const BorderRadius.all(Radius.circular(50.0)),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(50.0),
+                            ),
                             boxShadow: const [
                               BoxShadow(
                                 color: Colors.black38,
                                 spreadRadius: 0.05,
                                 blurRadius: 1.1,
                                 offset: Offset(0.0, 0.8),
-                              )
+                              ),
                             ],
                           ),
                         ),

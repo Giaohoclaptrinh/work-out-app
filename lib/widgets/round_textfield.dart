@@ -4,11 +4,13 @@ import 'package:workout_app/common/color_extension.dart';
 class RoundTextField extends StatelessWidget {
   final TextEditingController? controller;
   final TextInputType? keyboardType;
-  final String hintText; 
-  final String? icon; 
-  final Widget? rightIcon; 
+  final String hintText;
+  final String? icon;
+  final Widget? rightIcon;
   final bool obscureText;
   final EdgeInsets? margin;
+
+  final void Function(String)? onChanged;
 
   const RoundTextField({
     super.key,
@@ -19,6 +21,7 @@ class RoundTextField extends StatelessWidget {
     this.keyboardType,
     this.obscureText = false,
     this.rightIcon,
+    this.onChanged,
   });
 
   @override
@@ -33,8 +36,12 @@ class RoundTextField extends StatelessWidget {
         controller: controller,
         keyboardType: keyboardType,
         obscureText: obscureText,
+        onChanged: onChanged,
         decoration: InputDecoration(
-          contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 15,
+            horizontal: 15,
+          ),
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
           hintText: hintText,
