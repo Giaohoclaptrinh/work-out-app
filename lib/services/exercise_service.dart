@@ -4,7 +4,7 @@ import '../models/exercise.dart';
 class ExerciseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Get all exercises
+  /// Get all exercises (sorted by name)
   Future<List<Exercise>> getAllExercises() async {
     try {
       final querySnapshot = await _firestore
@@ -20,7 +20,7 @@ class ExerciseService {
     }
   }
 
-  // Get exercise by ID
+  /// Get exercise by ID
   Future<Exercise?> getExercise(String exerciseId) async {
     try {
       final doc = await _firestore
@@ -37,7 +37,7 @@ class ExerciseService {
     }
   }
 
-  // Get exercises by category
+  /// Get exercises by category
   Future<List<Exercise>> getExercisesByCategory(String category) async {
     try {
       final querySnapshot = await _firestore
@@ -54,7 +54,7 @@ class ExerciseService {
     }
   }
 
-  // Get exercises by muscle group
+  /// Get exercises by muscle group
   Future<List<Exercise>> getExercisesByMuscleGroup(String muscleGroup) async {
     try {
       final querySnapshot = await _firestore
@@ -71,7 +71,7 @@ class ExerciseService {
     }
   }
 
-  // Search exercises by name
+  /// Search exercises by name
   Future<List<Exercise>> searchExercises(String query) async {
     try {
       final querySnapshot = await _firestore
@@ -89,7 +89,7 @@ class ExerciseService {
     }
   }
 
-  // Create exercise (admin function)
+  /// Create new exercise (admin)
   Future<void> createExercise(Exercise exercise) async {
     try {
       await _firestore
@@ -101,7 +101,7 @@ class ExerciseService {
     }
   }
 
-  // Update exercise (admin function)
+  /// Update existing exercise (admin)
   Future<void> updateExercise(Exercise exercise) async {
     try {
       await _firestore
@@ -113,7 +113,7 @@ class ExerciseService {
     }
   }
 
-  // Delete exercise (admin function)
+  /// Delete exercise (admin)
   Future<void> deleteExercise(String exerciseId) async {
     try {
       await _firestore
@@ -125,12 +125,10 @@ class ExerciseService {
     }
   }
 
-  // Get all categories
+  /// Get all unique categories
   Future<List<String>> getAllCategories() async {
     try {
-      final querySnapshot = await _firestore
-          .collection('exercises')
-          .get();
+      final querySnapshot = await _firestore.collection('exercises').get();
 
       final categories = <String>{};
       for (final doc in querySnapshot.docs) {
@@ -144,12 +142,10 @@ class ExerciseService {
     }
   }
 
-  // Get all muscle groups
+  /// Get all unique muscle groups
   Future<List<String>> getAllMuscleGroups() async {
     try {
-      final querySnapshot = await _firestore
-          .collection('exercises')
-          .get();
+      final querySnapshot = await _firestore.collection('exercises').get();
 
       final muscleGroups = <String>{};
       for (final doc in querySnapshot.docs) {
@@ -163,16 +159,13 @@ class ExerciseService {
     }
   }
 
-  // Stream all exercises
+  /// Stream all exercises (real-time updates)
   Stream<List<Exercise>> streamAllExercises() {
     return _firestore
         .collection('exercises')
         .orderBy('name')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Exercise.fromJson(doc.data()))
-            .toList());
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Exercise.fromJson(doc.data())).toList());
   }
-
-
-} 
+}

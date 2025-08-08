@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:workout_app/models/exercise.dart';
+import 'package:workout_app/services/exercise_service.dart';
 import '../common/color_extension.dart';
 import '../models/workout.dart';
 import '../services/workout_service.dart';
@@ -22,6 +24,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
   late TabController _tabController;
   final WorkoutService _workoutService = WorkoutService();
   final GymVisualService _gymVisualService = GymVisualService();
+  final ExerciseService _exerciseService = ExerciseService();
   final TextEditingController _searchController = TextEditingController();
 
   List<Workout> _allWorkouts = [];
@@ -29,6 +32,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
   List<Map<String, dynamic>> _tips = [];
   List<Workout> _favorites = [];
   List<Workout> _history = [];
+  List<Exercise> _exercises = [];
 
   bool _isLoading = true;
   String _searchQuery = '';
@@ -47,8 +51,22 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadData();
+    _loadExercises();
+  }
+
+  Future<void> _loadExercises() async {
+    try {
+      final exercises = await _exerciseService.getAllExercises();
+      if (mounted) {
+        setState(() {
+          _exercises = exercises;
+        });
+      }
+    } catch (e) {
+      print('Error loading exercises: $e');
+    }
   }
 
   @override
@@ -302,6 +320,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
             Tab(text: "Workouts"),
             Tab(text: "Favorites"),
             Tab(text: "History"),
+            
           ],
         ),
       ),
@@ -360,11 +379,54 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                 _buildWorkoutsTab(),
                 _buildFavoritesTab(),
                 _buildHistoryTab(),
+                _buildExercisesTab(),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildExercisesTab() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return RefreshIndicator(
+      onRefresh: _loadExercises,
+      child: _exercises.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.fitness_center, size: 64, color: TColor.gray),
+                  const SizedBox(height: 16),
+                  Text(
+                    "No exercises found",
+                    style: TextStyle(color: TColor.gray, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Try importing or syncing exercises",
+                    style: TextStyle(color: TColor.gray, fontSize: 14),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              itemCount: _exercises.length,
+              itemBuilder: (context, index) {
+                final exercise = _exercises[index];
+                return ListTile(
+                  title: Text(exercise.name),
+                  subtitle: Text(exercise.category),
+                  onTap: () {
+                    // TODO: Navigate to exercise detail or video
+                  },
+                );
+              },
+            ),
     );
   }
 
