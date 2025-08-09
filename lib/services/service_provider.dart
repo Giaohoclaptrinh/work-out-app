@@ -6,6 +6,7 @@ import 'workout_service.dart';
 import 'exercise_service.dart';
 import 'storage_service.dart';
 import 'onboarding_service.dart';
+import 'cache_service.dart';
 
 class ServiceProvider extends ChangeNotifier {
   late final AuthService authService;
@@ -14,6 +15,7 @@ class ServiceProvider extends ChangeNotifier {
   late final ExerciseService exerciseService;
   late final StorageService storageService;
   late final OnboardingService onboardingService;
+  late final CacheService dataCacheService;
 
   ServiceProvider() {
     authService = AuthService();
@@ -22,6 +24,7 @@ class ServiceProvider extends ChangeNotifier {
     exerciseService = ExerciseService();
     storageService = StorageService();
     onboardingService = OnboardingService();
+    dataCacheService = CacheService();
   }
 
   // Initialize all services

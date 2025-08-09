@@ -5,6 +5,7 @@ import '../../common/color_extension.dart';
 import '../../screens/auth_screen.dart';
 import '../../services/notification_service.dart';
 import '../../services/exercise_service.dart';
+import '../../services/cache_service.dart';
 import '../../widgets/round_button.dart';
 import '../../widgets/setting_row.dart';
 import '../../widgets/title_subtitle_cell.dart';
@@ -27,6 +28,7 @@ class _ProfileViewState extends State<ProfileView> {
   bool _disposed = false;
   final NotificationService _notificationService = NotificationService();
   final ExerciseService _exerciseService = ExerciseService();
+  final CacheService _cacheService = CacheService();
 
   List accountArr = [
     {"image": "assets/img/p_personal.png", "name": "Personal Data", "tag": "1"},
@@ -390,9 +392,9 @@ class _ProfileViewState extends State<ProfileView> {
 
   void _showWorkoutProgressDialog() async {
     try {
-      // Get user's workout history
-      final completedWorkouts = await _exerciseService.getWorkoutHistory();
-      final favoriteWorkouts = await _exerciseService.getFavoriteWorkouts();
+      // Get user's workout history using cached service for better performance
+      final completedWorkouts = await _cacheService.getWorkoutHistory();
+      final favoriteWorkouts = await _cacheService.getFavoriteWorkouts();
 
       if (!mounted) return;
 
