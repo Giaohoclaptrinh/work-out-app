@@ -1,21 +1,29 @@
 import 'package:flutter/material.dart';
 import '../common/color_extension.dart';
-import '../models/workout.dart';
-import '../services/workout_service.dart';
+import '../models/exercise.dart';
+import '../services/exercise_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/round_button.dart';
 import '../widgets/step_detail_row.dart';
+import '../widgets/workout_video_player.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
-  final Workout workout;
+  final Exercise exercise;
+  final VoidCallback? onFavoriteChanged;
 
-  const WorkoutDetailScreen({super.key, required this.workout});
+  const WorkoutDetailScreen({
+    super.key,
+    required this.exercise,
+    this.onFavoriteChanged,
+  });
 
   @override
   State<WorkoutDetailScreen> createState() => _WorkoutDetailScreenState();
 }
 
 class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
-  final WorkoutService _workoutService = WorkoutService();
+  final ExerciseService _exerciseService = ExerciseService();
+  final NotificationService _notificationService = NotificationService();
   bool _isFavorite = false;
   bool _isLoading = true;
 
@@ -27,7 +35,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
 
   Future<void> _checkFavoriteStatus() async {
     try {
-      final isFavorite = await _workoutService.isFavorite(widget.workout.id);
+      final isFavorite = widget.exercise.isFavorite;
       setState(() {
         _isFavorite = isFavorite;
         _isLoading = false;
@@ -42,11 +50,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
 
   Future<void> _toggleFavorite() async {
     try {
-      if (_isFavorite) {
-        await _workoutService.removeFromFavorites(widget.workout.id);
-      } else {
-        await _workoutService.addToFavorites(widget.workout.id);
-      }
+      // Always call service to toggle - it handles both add and remove
+      await _exerciseService.toggleFavorite(widget.exercise.id);
+
       setState(() {
         _isFavorite = !_isFavorite;
       });
@@ -60,6 +66,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
             backgroundColor: _isFavorite ? Colors.green : Colors.orange,
           ),
         );
+
+        // Notify parent to refresh data
+        widget.onFavoriteChanged?.call();
       }
     } catch (e) {
       print('Error toggling favorite: $e');
@@ -76,7 +85,22 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
 
   Future<void> _completeWorkout() async {
     try {
-      await _workoutService.completeWorkout(widget.workout.id);
+      await _exerciseService.completeWorkout(widget.exercise.id);
+
+      // Add completion notification
+      await _notificationService.addNotification(
+        'Workout Completed! 🎉',
+        'Great job! You completed "${widget.exercise.name}". You burned approximately ${widget.exercise.calories ?? 100} calories.',
+        type: 'workout_completed',
+      );
+
+      // Add completion activity
+      await _notificationService.addActivity(
+        'Workout Completed',
+        'Completed ${widget.exercise.name} workout',
+        type: 'workout',
+      );
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -115,7 +139,15 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset(widget.workout.image, fit: BoxFit.cover),
+                  widget.exercise.displayImage.startsWith('http')
+                      ? Image.network(
+                          widget.exercise.displayImage,
+                          fit: BoxFit.cover,
+                        )
+                      : Image.asset(
+                          widget.exercise.displayImage,
+                          fit: BoxFit.cover,
+                        ),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -136,7 +168,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.workout.name,
+                          widget.exercise.name,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 24,
@@ -149,7 +181,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                             Icon(Icons.timer, color: Colors.white, size: 16),
                             const SizedBox(width: 4),
                             Text(
-                              '${widget.workout.duration} min',
+                              '${widget.exercise.duration} min',
                               style: const TextStyle(color: Colors.white),
                             ),
                             const SizedBox(width: 16),
@@ -160,7 +192,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${widget.workout.calories} cal',
+                              '${widget.exercise.calories} cal',
                               style: const TextStyle(color: Colors.white),
                             ),
                           ],
@@ -215,7 +247,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    widget.workout.description,
+                    widget.exercise.description,
                     style: TextStyle(color: TColor.gray, fontSize: 16),
                   ),
                   const SizedBox(height: 24),
@@ -226,7 +258,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       Expanded(
                         child: _buildInfoCard(
                           'Difficulty',
-                          widget.workout.difficulty,
+                          widget.exercise.difficulty ?? 'Beginner',
                           Icons.fitness_center,
                         ),
                       ),
@@ -234,7 +266,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       Expanded(
                         child: _buildInfoCard(
                           'Category',
-                          widget.workout.category,
+                          widget.exercise.category,
                           Icons.category,
                         ),
                       ),
@@ -243,7 +275,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   const SizedBox(height: 16),
 
                   // Muscle Groups
-                  if (widget.workout.muscleGroups.isNotEmpty) ...[
+                  if (widget.exercise.muscleGroups.isNotEmpty) ...[
                     Text(
                       'Muscle Groups',
                       style: TextStyle(
@@ -256,7 +288,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: widget.workout.muscleGroups.map((muscle) {
+                      children: widget.exercise.muscleGroups.map((muscle) {
                         return Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -280,6 +312,24 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     const SizedBox(height: 24),
                   ],
 
+                  // Video Player Section
+                  if (widget.exercise.workout != null) ...[
+                    Text(
+                      'Workout Video',
+                      style: TextStyle(
+                        color: TColor.black,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    WorkoutVideoPlayer(
+                      workout: widget.exercise.workout!,
+                      autoPlay: false,
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
                   // Workout Steps
                   Text(
                     'Workout Steps',
@@ -291,7 +341,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  if (widget.workout.steps.isEmpty)
+                  if (widget.exercise.steps == null ||
+                      widget.exercise.steps!.isEmpty)
                     Center(
                       child: Column(
                         children: [
@@ -309,14 +360,14 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       ),
                     )
                   else
-                    ...widget.workout.steps.map(
+                    ...widget.exercise.steps!.map(
                       (step) => StepDetailRow(
                         sObj: {
                           'no': step.stepNumber.toString(),
                           'title': step.title,
                           'detail': step.description,
                           'image': step.image,
-                          'duration': step.duration.toString(),
+                          'duration': '${(step.duration / 60).round()} min',
                           'reps': step.reps?.toString(),
                           'sets': step.sets?.toString(),
                         },

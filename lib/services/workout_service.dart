@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout.dart';
-import 'gym_visual_service.dart';
 
 class WorkoutService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -20,11 +19,9 @@ class WorkoutService {
 
       print('Found ${workouts.length} workouts in Firestore');
 
-      // If no workouts in Firestore, create from GymVisual exercises
+      // Return workouts from Firestore
       if (workouts.isEmpty) {
-        print('No workouts found in Firestore, creating from GymVisual data');
-        workouts = await _createWorkoutsFromGymVisual();
-        print('Created ${workouts.length} workouts from GymVisual data');
+        print('No workouts found in Firestore');
       }
 
       print('Returning ${workouts.length} total workouts');
@@ -33,86 +30,6 @@ class WorkoutService {
       print('Error fetching workouts: $e');
       return [];
     }
-  }
-
-  // Tạo workouts từ GymVisual exercises
-  Future<List<Workout>> _createWorkoutsFromGymVisual() async {
-    try {
-      final exercises = GymVisualService.gymVisualExercises.values.toList();
-
-      List<Workout> workouts = [];
-
-      print('Creating workouts from ${exercises.length} GymVisual exercises');
-
-      for (int i = 0; i < exercises.length; i++) {
-        final exercise = exercises[i];
-
-        print('Processing exercise ${i + 1}: ${exercise['name']}');
-
-        // Tạo workout từ exercise
-        final workout = Workout(
-          id: exercise['id'],
-          name: exercise['name'],
-          description: exercise['description'],
-          image: 'assets/img/Workout${(i % 3) + 1}.png', // Use available images
-          category: exercise['category'],
-          duration: 20 + (i * 5), // Vary duration
-          calories: 150 + (i * 25), // Vary calories
-          difficulty: exercise['difficulty'],
-          muscleGroups: List<String>.from(exercise['muscleGroups']),
-          steps: _createStepsFromInstructions(exercise['instructions']),
-        );
-
-        workouts.add(workout);
-        print(
-          'Created workout: ${workout.name} with ${workout.steps.length} steps',
-        );
-      }
-
-      print('Total workouts created: ${workouts.length}');
-      return workouts;
-    } catch (e) {
-      print('Error creating workouts from GymVisual: $e');
-      return [];
-    }
-  }
-
-  // Tạo steps từ instructions
-  List<WorkoutStep> _createStepsFromInstructions(String instructions) {
-    final lines = instructions.split('\n');
-    List<WorkoutStep> steps = [];
-
-    for (int i = 0; i < lines.length; i++) {
-      final line = lines[i].trim();
-      if (line.isNotEmpty && line.contains('.')) {
-        final stepNumber = i + 1;
-        final title = line.split('.')[0].trim();
-        final description = line;
-
-        steps.add(
-          WorkoutStep(
-            stepNumber: stepNumber,
-            title: title,
-            description: description,
-            duration: 30 + (stepNumber * 10), // Vary duration
-          ),
-        );
-      }
-    }
-
-    // If no steps created, add a default step
-    if (steps.isEmpty) {
-      steps.add(
-        WorkoutStep(
-          stepNumber: 1,
-          title: 'Follow Instructions',
-          description: instructions,
-          duration: 60,
-        ),
-      );
-    }
-
-    return steps;
   }
 
   // Lấy workouts theo category
@@ -325,37 +242,8 @@ class WorkoutService {
     try {
       final doc = await _firestore.collection('workouts').doc(workoutId).get();
       if (!doc.exists) {
-        // Tìm workout trong GymVisual data
-        final gymVisualData = GymVisualService.gymVisualExercises;
-        final exercise = gymVisualData[workoutId];
-
-        if (exercise != null) {
-          print('Creating workout from GymVisual data: $workoutId');
-
-          // Tạo Workout object từ GymVisual data
-          final workout = Workout(
-            id: workoutId,
-            name: exercise['name'] ?? 'Unknown Exercise',
-            description: exercise['description'] ?? '',
-            image: exercise['image'] ?? 'assets/img/Workout1.png',
-            category: exercise['category'] ?? 'General',
-            duration: 15, // Default duration
-            calories: 100, // Default calories
-            difficulty: 'Beginner',
-            muscleGroups: exercise['muscleGroups'] ?? ['General'],
-            steps: _createStepsFromInstructions(
-              exercise['instructions']?.toString() ?? '',
-            ),
-          );
-
-          // Lưu vào Firestore
-          await _firestore
-              .collection('workouts')
-              .doc(workoutId)
-              .set(workout.toJson());
-
-          print('Workout saved to Firestore: ${workout.name}');
-        }
+        print('Workout $workoutId does not exist in Firestore');
+        // Workout doesn't exist, could create a default one or handle appropriately
       }
     } catch (e) {
       print('Error ensuring workout exists: $e');

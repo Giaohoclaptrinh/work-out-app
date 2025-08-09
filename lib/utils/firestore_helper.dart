@@ -1,20 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../services/gym_visual_service.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FirestoreHelper {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  // Thêm GymVisual exercises vào Firestore
-  static Future<void> addGymVisualExercisesToFirestore() async {
-    try {
-      final gymVisualService = GymVisualService();
-      await gymVisualService.importGymVisualExercises();
-      print('GymVisual exercises added to Firestore successfully!');
-    } catch (e) {
-      print('Error adding GymVisual exercises: $e');
-    }
-  }
 
   // Thêm sample workouts vào Firestore
   static Future<void> addSampleWorkoutsToFirestore() async {
@@ -143,7 +132,6 @@ class FirestoreHelper {
   static Future<void> addAllSampleData() async {
     try {
       await Future.wait([
-        addGymVisualExercisesToFirestore(),
         addSampleWorkoutsToFirestore(),
         addSampleTipsToFirestore(),
       ]);
@@ -179,80 +167,6 @@ class FirestoreHelper {
     } catch (e) {
       print('Error clearing data: $e');
     }
-  }
-
-  // Add all GymVisual workouts to Firestore
-  static Future<void> addAllGymVisualWorkoutsToFirestore() async {
-    try {
-      final batch = FirebaseFirestore.instance.batch();
-
-      final exercises = GymVisualService.gymVisualExercises.values.toList();
-
-      for (int i = 0; i < exercises.length; i++) {
-        final exercise = exercises[i];
-
-        final workout = {
-          'id': exercise['id'],
-          'name': exercise['name'],
-          'description': exercise['description'],
-          'image': 'assets/img/Workout${(i % 3) + 1}.png',
-          'category': exercise['category'],
-          'duration': 20 + (i * 5),
-          'calories': 150 + (i * 25),
-          'difficulty': exercise['difficulty'],
-          'muscleGroups': exercise['muscleGroups'],
-          'steps': _createWorkoutSteps(exercise['instructions']),
-          'source': 'GymVisual',
-          'importedAt': FieldValue.serverTimestamp(),
-        };
-
-        final docRef = FirebaseFirestore.instance
-            .collection('workouts')
-            .doc(exercise['id'] as String);
-        batch.set(docRef, workout);
-      }
-
-      await batch.commit();
-      print(
-        'All ${exercises.length} GymVisual workouts added to Firestore successfully',
-      );
-    } catch (e) {
-      print('Error adding GymVisual workouts: $e');
-    }
-  }
-
-  // Create workout steps from instructions
-  static List<Map<String, dynamic>> _createWorkoutSteps(String instructions) {
-    final lines = instructions.split('\n');
-    List<Map<String, dynamic>> steps = [];
-
-    for (int i = 0; i < lines.length; i++) {
-      final line = lines[i].trim();
-      if (line.isNotEmpty && line.contains('.')) {
-        final stepNumber = i + 1;
-        final title = line.split('.')[0].trim();
-        final description = line;
-
-        steps.add({
-          'stepNumber': stepNumber,
-          'title': title,
-          'description': description,
-          'duration': 30 + (stepNumber * 10),
-        });
-      }
-    }
-
-    // If no steps created, add a default step
-    if (steps.isEmpty) {
-      steps.add({
-        'stepNumber': 1,
-        'title': 'Follow Instructions',
-        'description': instructions,
-        'duration': 60,
-      });
-    }
-
-    return steps;
   }
 
   // Add sample meals to Firestore

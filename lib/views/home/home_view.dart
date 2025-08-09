@@ -15,6 +15,7 @@ import '../../widgets/upcoming_workout_row.dart';
 import '../../widgets/exercises_row.dart';
 import '../../widgets/dashboard_card.dart';
 import '../../services/workout_service.dart';
+import '../../services/notification_service.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -25,6 +26,7 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   final DashboardService _dashboardService = DashboardService();
+  final NotificationService _notificationService = NotificationService();
   DashboardData? _dashboardData;
   bool _isLoading = true;
   Map<String, dynamic>? _userData;
@@ -78,6 +80,145 @@ class _HomeViewState extends State<HomeView> {
     return 'Calculate your BMI';
   }
 
+  void _showNotificationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Notifications',
+          style: TextStyle(color: TColor.black, fontWeight: FontWeight.bold),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: Column(
+            children: [
+              // Add notification button for testing
+              ElevatedButton(
+                onPressed: _addTestNotification,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: TColor.primaryColor1,
+                ),
+                child: const Text(
+                  'Add Test Notification',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Notifications list
+              Expanded(
+                child: notificationsArr.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.notifications_none,
+                              size: 64,
+                              color: TColor.gray,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No notifications yet',
+                              style: TextStyle(
+                                color: TColor.gray,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: notificationsArr.length,
+                        itemBuilder: (context, index) {
+                          final notification = notificationsArr[index];
+                          return ListTile(
+                            leading: Icon(
+                              notification['read'] == true
+                                  ? Icons.notifications
+                                  : Icons.notifications_active,
+                              color: notification['read'] == true
+                                  ? TColor.gray
+                                  : TColor.primaryColor1,
+                            ),
+                            title: Text(
+                              notification['title'] ?? 'Notification',
+                              style: TextStyle(
+                                fontWeight: notification['read'] == true
+                                    ? FontWeight.normal
+                                    : FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(notification['message'] ?? ''),
+                                const SizedBox(height: 4),
+                                Text(
+                                  NotificationService.formatTimeAgo(
+                                    notification['timestamp'],
+                                  ),
+                                  style: TextStyle(
+                                    color: TColor.gray,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            onTap: () {
+                              if (notification['read'] != true) {
+                                _markNotificationAsRead(notification['id']);
+                              }
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close', style: TextStyle(color: TColor.primaryColor1)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addTestNotification() async {
+    await _notificationService.addNotification(
+      'Welcome!',
+      'Thank you for using our fitness app. Start your workout journey today!',
+      type: 'welcome',
+    );
+
+    await _notificationService.addActivity(
+      'Account Created',
+      'Your fitness account has been successfully created',
+      type: 'account',
+    );
+
+    // Reload notifications
+    await _loadRealData();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Test notifications added!'),
+          backgroundColor: TColor.primaryColor1,
+        ),
+      );
+    }
+  }
+
+  Future<void> _markNotificationAsRead(String notificationId) async {
+    await _notificationService.markNotificationAsRead(notificationId);
+    await _loadRealData(); // Refresh to show read status
+  }
+
   Future<void> _loadDashboardData() async {
     try {
       setState(() {
@@ -108,9 +249,19 @@ class _HomeViewState extends State<HomeView> {
       final workoutService = WorkoutService();
       final tips = await workoutService.getWorkoutTips();
 
+      // Load notifications
+      final notifications = await _notificationService.getUserNotifications(
+        limit: 5,
+      );
+
+      // Load activities
+      final activities = await _notificationService.getUserActivities(limit: 5);
+
       if (mounted) {
         setState(() {
           tipsArr = tips;
+          notificationsArr = notifications;
+          activitiesArr = activities;
         });
       }
     } catch (e) {
@@ -229,7 +380,7 @@ class _HomeViewState extends State<HomeView> {
                         ],
                       ),
                       IconButton(
-                        onPressed: () {},
+                        onPressed: _showNotificationDialog,
                         icon: Image.asset(
                           "assets/img/notification_active.png",
                           width: 25,

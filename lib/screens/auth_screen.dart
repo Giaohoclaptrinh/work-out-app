@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:workout_app/widgets/round_textfield.dart';
 import 'package:workout_app/widgets/round_button.dart';
 import 'package:workout_app/widgets/setting_row.dart';
 import 'package:workout_app/services/auth_service.dart';
@@ -7,8 +6,6 @@ import 'package:workout_app/common/color_extension.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:workout_app/views/body_data_input_screen.dart';
-import 'package:workout_app/screens/onboarding_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});

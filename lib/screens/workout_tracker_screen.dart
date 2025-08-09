@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:workout_app/models/exercise.dart';
 import 'package:workout_app/services/exercise_service.dart';
 import '../common/color_extension.dart';
-import '../models/workout.dart';
-import '../services/workout_service.dart';
-import '../services/gym_visual_service.dart';
 import '../utils/firestore_helper.dart';
 import '../widgets/round_button.dart';
 import '../widgets/workout_row.dart';
 import '../widgets/what_train_row.dart';
 import '../widgets/round_textfield.dart';
+import '../services/upload_exercises.dart';
 import 'workout_detail_screen.dart';
 
 class WorkoutTrackerScreen extends StatefulWidget {
@@ -22,17 +21,14 @@ class WorkoutTrackerScreen extends StatefulWidget {
 class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  final WorkoutService _workoutService = WorkoutService();
-  final GymVisualService _gymVisualService = GymVisualService();
   final ExerciseService _exerciseService = ExerciseService();
   final TextEditingController _searchController = TextEditingController();
 
-  List<Workout> _allWorkouts = [];
-  List<Workout> _filteredWorkouts = [];
+  List<Exercise> _allWorkouts = [];
+  List<Exercise> _filteredWorkouts = [];
   List<Map<String, dynamic>> _tips = [];
-  List<Workout> _favorites = [];
-  List<Workout> _history = [];
-  List<Exercise> _exercises = [];
+  List<Exercise> _favorites = [];
+  List<Exercise> _history = [];
 
   bool _isLoading = true;
   String _searchQuery = '';
@@ -51,22 +47,8 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadData();
-    _loadExercises();
-  }
-
-  Future<void> _loadExercises() async {
-    try {
-      final exercises = await _exerciseService.getAllExercises();
-      if (mounted) {
-        setState(() {
-          _exercises = exercises;
-        });
-      }
-    } catch (e) {
-      print('Error loading exercises: $e');
-    }
   }
 
   @override
@@ -83,19 +65,19 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
 
     try {
       final futures = await Future.wait([
-        _workoutService.getAllWorkouts(),
-        _workoutService.getWorkoutTips(),
-        _workoutService.getFavoriteWorkouts(),
-        _workoutService.getWorkoutHistory(),
+        _exerciseService.getAllWorkouts(),
+        _exerciseService.getWorkoutTips(),
+        _exerciseService.getFavoriteWorkouts(),
+        _exerciseService.getWorkoutHistory(),
       ]);
 
       if (mounted) {
         setState(() {
-          _allWorkouts = futures[0] as List<Workout>;
+          _allWorkouts = futures[0] as List<Exercise>;
           _filteredWorkouts = _allWorkouts;
           _tips = futures[1] as List<Map<String, dynamic>>;
-          _favorites = futures[2] as List<Workout>;
-          _history = futures[3] as List<Workout>;
+          _favorites = futures[2] as List<Exercise>;
+          _history = futures[3] as List<Exercise>;
           _isLoading = false;
         });
       }
@@ -138,24 +120,80 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
     _filterWorkouts();
   }
 
-  Future<void> _importGymVisualData() async {
+  Future<void> _cleanupOldSampleData() async {
     try {
-      await _gymVisualService.importGymVisualExercises();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('GymVisual data imported successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // Reload data
-        _loadData();
+      // Lấy tất cả documents có source = 'Sample'
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('exercises')
+          .where('source', isEqualTo: 'Sample')
+          .get();
+
+      if (querySnapshot.docs.isEmpty) return;
+
+      // Xóa theo batch
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in querySnapshot.docs) {
+        batch.delete(doc.reference);
       }
+      await batch.commit();
     } catch (e) {
+      debugPrint('Cleanup error: $e');
+    }
+  }
+
+  Future<void> _uploadSampleWorkouts() async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Cleaning up old data and uploading fresh workouts...',
+                style: TextStyle(color: TColor.black),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // Step 1: Cleanup old data
+      await _cleanupOldSampleData();
+
+      // Step 2: Upload fresh data
+      await uploadExercisesToFirestore();
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      // Reload data to show new workouts
+      await _loadData();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error importing data: $e'),
+            content: const Text(
+              '✅ Fresh sample workouts uploaded with working video thumbnails!',
+            ),
+            backgroundColor: TColor.primaryColor1,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog if still open
+      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading workouts: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -181,31 +219,6 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error clearing history: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _importAllGymVisualWorkouts() async {
-    try {
-      await FirestoreHelper.addAllGymVisualWorkoutsToFirestore();
-      await _loadData();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('All GymVisual workouts imported successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error importing workouts: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -296,14 +309,9 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.add, color: TColor.primaryColor1),
-            onPressed: _importGymVisualData,
-            tooltip: 'Import GymVisual Data',
-          ),
-          IconButton(
-            icon: Icon(Icons.fitness_center, color: TColor.primaryColor1),
-            onPressed: _importAllGymVisualWorkouts,
-            tooltip: 'Import All GymVisual Workouts',
+            icon: Icon(Icons.upload, color: TColor.primaryColor1),
+            onPressed: _uploadSampleWorkouts,
+            tooltip: 'Upload Sample Workouts',
           ),
           IconButton(
             icon: Icon(Icons.clear, color: TColor.primaryColor1),
@@ -320,7 +328,6 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
             Tab(text: "Workouts"),
             Tab(text: "Favorites"),
             Tab(text: "History"),
-            
           ],
         ),
       ),
@@ -344,7 +351,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
 
                 // Category Filter
                 SizedBox(
-                  height: 5,
+                  height: 45, // chỉnh sửa lại nếu cần thiết
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: _categories.length,
@@ -379,54 +386,11 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                 _buildWorkoutsTab(),
                 _buildFavoritesTab(),
                 _buildHistoryTab(),
-                _buildExercisesTab(),
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildExercisesTab() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    return RefreshIndicator(
-      onRefresh: _loadExercises,
-      child: _exercises.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.fitness_center, size: 64, color: TColor.gray),
-                  const SizedBox(height: 16),
-                  Text(
-                    "No exercises found",
-                    style: TextStyle(color: TColor.gray, fontSize: 16),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Try importing or syncing exercises",
-                    style: TextStyle(color: TColor.gray, fontSize: 14),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              itemCount: _exercises.length,
-              itemBuilder: (context, index) {
-                final exercise = _exercises[index];
-                return ListTile(
-                  title: Text(exercise.name),
-                  subtitle: Text(exercise.category),
-                  onTap: () {
-                    // TODO: Navigate to exercise detail or video
-                  },
-                );
-              },
-            ),
     );
   }
 
@@ -520,7 +484,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                   child: WorkoutRow(
                     wObj: {
                       'name': workout.name,
-                      'image': workout.image,
+                      'image': workout.displayImage,
                       'kcal': workout.calories.toString(),
                       'time': workout.duration.toString(),
                       'progress': 0.0,
@@ -589,7 +553,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                       child: WorkoutRow(
                         wObj: {
                           'name': workout.name,
-                          'image': workout.image,
+                          'image': workout.displayImage,
                           'kcal': workout.calories.toString(),
                           'time': workout.duration.toString(),
                           'progress': 0.0,
@@ -658,7 +622,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                       child: WorkoutRow(
                         wObj: {
                           'name': workout.name,
-                          'image': workout.image,
+                          'image': workout.displayImage,
                           'kcal': workout.calories.toString(),
                           'time': workout.duration.toString(),
                           'progress': 1.0, // Completed
@@ -672,11 +636,17 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
     );
   }
 
-  void _navigateToWorkoutDetail(Workout workout) {
+  void _navigateToWorkoutDetail(Exercise workout) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => WorkoutDetailScreen(workout: workout),
+        builder: (context) => WorkoutDetailScreen(
+          exercise: workout,
+          onFavoriteChanged: () {
+            // Refresh data when favorite changes
+            _loadData();
+          },
+        ),
       ),
     ).then((result) {
       // Refresh data when returning from detail screen

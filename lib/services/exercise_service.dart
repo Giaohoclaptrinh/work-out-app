@@ -4,7 +4,16 @@ import '../models/exercise.dart';
 class ExerciseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Get all exercises (sorted by name)
+  /// Helper method to convert Firestore document to Exercise with proper ID
+  Exercise _documentToExercise(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final data = doc.data();
+    data['id'] = doc.id; // Ensure document ID is included
+    return Exercise.fromJson(data);
+  }
+
+  /// Get all exercises (both basic exercises and workouts)
   Future<List<Exercise>> getAllExercises() async {
     try {
       final querySnapshot = await _firestore
@@ -12,11 +21,45 @@ class ExerciseService {
           .orderBy('name')
           .get();
 
-      return querySnapshot.docs
-          .map((doc) => Exercise.fromJson(doc.data()))
-          .toList();
+      return querySnapshot.docs.map(_documentToExercise).toList();
     } catch (e) {
       throw Exception('Failed to get exercises: $e');
+    }
+  }
+
+  /// Get only workout-type exercises
+  Future<List<Exercise>> getAllWorkouts() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('exercises')
+          .where('type', isEqualTo: 'workout')
+          .get();
+
+      final exercises = querySnapshot.docs.map(_documentToExercise).toList();
+
+      // Sort in memory
+      exercises.sort((a, b) => a.name.compareTo(b.name));
+      return exercises;
+    } catch (e) {
+      throw Exception('Failed to get workouts: $e');
+    }
+  }
+
+  /// Get only basic exercise-type exercises
+  Future<List<Exercise>> getBasicExercises() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('exercises')
+          .where('type', isEqualTo: 'exercise')
+          .get();
+
+      final exercises = querySnapshot.docs.map(_documentToExercise).toList();
+
+      // Sort in memory
+      exercises.sort((a, b) => a.name.compareTo(b.name));
+      return exercises;
+    } catch (e) {
+      throw Exception('Failed to get basic exercises: $e');
     }
   }
 
@@ -29,7 +72,9 @@ class ExerciseService {
           .get();
 
       if (doc.exists) {
-        return Exercise.fromJson(doc.data()!);
+        final data = doc.data()!;
+        data['id'] = doc.id; // Add document ID
+        return Exercise.fromJson(data);
       }
       return null;
     } catch (e) {
@@ -46,9 +91,7 @@ class ExerciseService {
           .orderBy('name')
           .get();
 
-      return querySnapshot.docs
-          .map((doc) => Exercise.fromJson(doc.data()))
-          .toList();
+      return querySnapshot.docs.map(_documentToExercise).toList();
     } catch (e) {
       throw Exception('Failed to get exercises by category: $e');
     }
@@ -63,9 +106,7 @@ class ExerciseService {
           .orderBy('name')
           .get();
 
-      return querySnapshot.docs
-          .map((doc) => Exercise.fromJson(doc.data()))
-          .toList();
+      return querySnapshot.docs.map(_documentToExercise).toList();
     } catch (e) {
       throw Exception('Failed to get exercises by muscle group: $e');
     }
@@ -81,9 +122,7 @@ class ExerciseService {
           .orderBy('name')
           .get();
 
-      return querySnapshot.docs
-          .map((doc) => Exercise.fromJson(doc.data()))
-          .toList();
+      return querySnapshot.docs.map(_documentToExercise).toList();
     } catch (e) {
       throw Exception('Failed to search exercises: $e');
     }
@@ -116,10 +155,7 @@ class ExerciseService {
   /// Delete exercise (admin)
   Future<void> deleteExercise(String exerciseId) async {
     try {
-      await _firestore
-          .collection('exercises')
-          .doc(exerciseId)
-          .delete();
+      await _firestore.collection('exercises').doc(exerciseId).delete();
     } catch (e) {
       throw Exception('Failed to delete exercise: $e');
     }
@@ -132,7 +168,7 @@ class ExerciseService {
 
       final categories = <String>{};
       for (final doc in querySnapshot.docs) {
-        final exercise = Exercise.fromJson(doc.data());
+        final exercise = _documentToExercise(doc);
         categories.add(exercise.category);
       }
 
@@ -149,7 +185,7 @@ class ExerciseService {
 
       final muscleGroups = <String>{};
       for (final doc in querySnapshot.docs) {
-        final exercise = Exercise.fromJson(doc.data());
+        final exercise = _documentToExercise(doc);
         muscleGroups.addAll(exercise.muscleGroups);
       }
 
@@ -165,7 +201,100 @@ class ExerciseService {
         .collection('exercises')
         .orderBy('name')
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Exercise.fromJson(doc.data())).toList());
+        .map((snapshot) => snapshot.docs.map(_documentToExercise).toList());
+  }
+
+  /// Get favorite workouts
+  Future<List<Exercise>> getFavoriteWorkouts() async {
+    try {
+      // Simplified query: only filter by type, then filter isFavorite in memory
+      final querySnapshot = await _firestore
+          .collection('exercises')
+          .where('type', isEqualTo: 'workout')
+          .get();
+
+      final exercises = querySnapshot.docs
+          .map((doc) => Exercise.fromJson(doc.data()))
+          .where((exercise) => exercise.isFavorite == true) // Filter in memory
+          .toList();
+
+      // Sort in memory
+      exercises.sort((a, b) => a.name.compareTo(b.name));
+      return exercises;
+    } catch (e) {
+      throw Exception('Failed to get favorite workouts: $e');
+    }
+  }
+
+  /// Get workout history (completed workouts)
+  Future<List<Exercise>> getWorkoutHistory() async {
+    try {
+      // Simplified query: only filter by type, then filter completedAt in memory
+      final querySnapshot = await _firestore
+          .collection('exercises')
+          .where('type', isEqualTo: 'workout')
+          .get();
+
+      final exercises = querySnapshot.docs
+          .map((doc) => Exercise.fromJson(doc.data()))
+          .where((exercise) => exercise.completedAt != null) // Filter in memory
+          .toList();
+
+      // Sort in memory by completedAt descending
+      exercises.sort((a, b) {
+        if (a.completedAt == null && b.completedAt == null) return 0;
+        if (a.completedAt == null) return 1;
+        if (b.completedAt == null) return -1;
+        return b.completedAt!.compareTo(a.completedAt!);
+      });
+      return exercises;
+    } catch (e) {
+      throw Exception('Failed to get workout history: $e');
+    }
+  }
+
+  /// Toggle favorite status
+  Future<void> toggleFavorite(String exerciseId) async {
+    try {
+      final doc = await _firestore
+          .collection('exercises')
+          .doc(exerciseId)
+          .get();
+      if (doc.exists) {
+        final currentFavorite = doc.data()?['isFavorite'] as bool? ?? false;
+        await _firestore.collection('exercises').doc(exerciseId).update({
+          'isFavorite': !currentFavorite,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      throw Exception('Failed to toggle favorite: $e');
+    }
+  }
+
+  /// Mark workout as completed
+  Future<void> completeWorkout(String exerciseId) async {
+    try {
+      await _firestore.collection('exercises').doc(exerciseId).update({
+        'completedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to complete workout: $e');
+    }
+  }
+
+  /// Get workout tips
+  Future<List<Map<String, dynamic>>> getWorkoutTips() async {
+    try {
+      final snapshot = await _firestore.collection('workoutTips').get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to get workout tips: $e');
+    }
   }
 }

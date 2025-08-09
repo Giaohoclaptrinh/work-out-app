@@ -5,7 +5,6 @@ import 'user_profile_service.dart';
 import 'workout_service.dart';
 import 'exercise_service.dart';
 import 'storage_service.dart';
-import 'gym_visual_service.dart';
 import 'onboarding_service.dart';
 
 class ServiceProvider extends ChangeNotifier {
@@ -14,7 +13,6 @@ class ServiceProvider extends ChangeNotifier {
   late final WorkoutService workoutService;
   late final ExerciseService exerciseService;
   late final StorageService storageService;
-  late final GymVisualService gymVisualService;
   late final OnboardingService onboardingService;
 
   ServiceProvider() {
@@ -23,7 +21,6 @@ class ServiceProvider extends ChangeNotifier {
     workoutService = WorkoutService();
     exerciseService = ExerciseService();
     storageService = StorageService();
-    gymVisualService = GymVisualService();
     onboardingService = OnboardingService();
   }
 
