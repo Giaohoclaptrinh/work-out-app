@@ -16,6 +16,7 @@ import '../../widgets/exercises_row.dart';
 import '../../widgets/dashboard_card.dart';
 import '../../services/workout_service.dart';
 import '../../services/notification_service.dart';
+import '../../screens/bmi_chart_screen.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -349,499 +350,537 @@ class _HomeViewState extends State<HomeView> {
 
     return Scaffold(
       backgroundColor: TColor.white,
-      body: RefreshIndicator(
-        onRefresh: _loadDashboardData,
-        child: SingleChildScrollView(
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Welcome header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Welcome Back,",
-                            style: TextStyle(color: TColor.gray, fontSize: 12),
-                          ),
-                          Text(
-                            _userData?['displayName'] ?? 'User',
-                            style: TextStyle(
-                              color: TColor.black,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
+      body: _isLoading
+          ? Center(
+              child: CircularProgressIndicator(color: TColor.primaryColor1),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadDashboardData,
+              child: SingleChildScrollView(
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Welcome header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Welcome Back,",
+                                  style: TextStyle(
+                                    color: TColor.gray,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  _userData?['displayName'] ?? 'User',
+                                  style: TextStyle(
+                                    color: TColor.black,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            IconButton(
+                              onPressed: _showNotificationDialog,
+                              icon: Image.asset(
+                                "assets/img/notification_active.png",
+                                width: 25,
+                                height: 25,
+                                fit: BoxFit.fitHeight,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: media.width * 0.05),
+
+                        // BMI Card
+                        Container(
+                          height: media.width * 0.4,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(colors: TColor.primaryG),
+                            borderRadius: BorderRadius.circular(
+                              media.width * 0.075,
                             ),
                           ),
-                        ],
-                      ),
-                      IconButton(
-                        onPressed: _showNotificationDialog,
-                        icon: Image.asset(
-                          "assets/img/notification_active.png",
-                          width: 25,
-                          height: 25,
-                          fit: BoxFit.fitHeight,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: media.width * 0.05),
-
-                  // BMI Card
-                  Container(
-                    height: media.width * 0.4,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: TColor.primaryG),
-                      borderRadius: BorderRadius.circular(media.width * 0.075),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Image.asset(
-                          "assets/img/bg_dots.png",
-                          height: media.width * 0.4,
-                          width: double.maxFinite,
-                          fit: BoxFit.fitHeight,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 25,
-                            horizontal: 25,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Stack(
+                            alignment: Alignment.center,
                             children: [
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "BMI (Body Mass Index)",
-                                    style: TextStyle(
-                                      color: TColor.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  Text(
-                                    _getBMIStatus(),
-                                    style: TextStyle(
-                                      color: TColor.white.withOpacity(0.7),
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  SizedBox(height: media.width * 0.05),
-                                  SizedBox(
-                                    width: 120,
-                                    height: 35,
-                                    child: RoundButton(
-                                      title: "View More",
-                                      type: RoundButtonType.bgSGradient,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w400,
-                                      onPressed: () {},
-                                    ),
-                                  ),
-                                ],
+                              Image.asset(
+                                "assets/img/bg_dots.png",
+                                height: media.width * 0.4,
+                                width: double.maxFinite,
+                                fit: BoxFit.fitHeight,
                               ),
-                              AspectRatio(
-                                aspectRatio: 1,
-                                child: PieChart(
-                                  PieChartData(
-                                    pieTouchData: PieTouchData(
-                                      touchCallback:
-                                          (
-                                            FlTouchEvent event,
-                                            pieTouchResponse,
-                                          ) {},
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 25,
+                                  horizontal: 25,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "BMI (Body Mass Index)",
+                                          style: TextStyle(
+                                            color: TColor.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        Text(
+                                          _getBMIStatus(),
+                                          style: TextStyle(
+                                            color: TColor.white.withOpacity(
+                                              0.7,
+                                            ),
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        SizedBox(height: media.width * 0.05),
+                                        SizedBox(
+                                          width: 120,
+                                          height: 35,
+                                          child: RoundButton(
+                                            title: "View More",
+                                            type: RoundButtonType.bgSGradient,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w400,
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      const BMIChartScreen(),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    startDegreeOffset: 250,
-                                    borderData: FlBorderData(show: false),
-                                    sectionsSpace: 1,
-                                    centerSpaceRadius: 0,
-                                    sections: showingSections(),
-                                  ),
+                                    AspectRatio(
+                                      aspectRatio: 1,
+                                      child: PieChart(
+                                        PieChartData(
+                                          pieTouchData: PieTouchData(
+                                            touchCallback:
+                                                (
+                                                  FlTouchEvent event,
+                                                  pieTouchResponse,
+                                                ) {},
+                                          ),
+                                          startDegreeOffset: 250,
+                                          borderData: FlBorderData(show: false),
+                                          sectionsSpace: 1,
+                                          centerSpaceRadius: 0,
+                                          sections: showingSections(),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
 
-                  SizedBox(height: media.width * 0.05),
+                        SizedBox(height: media.width * 0.05),
 
-                  // Dashboard Cards
-                  if (_dashboardData != null) ...[
-                    Text(
-                      "Today's Overview",
-                      style: TextStyle(
-                        color: TColor.black,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: 15),
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 15,
-                      mainAxisSpacing: 15,
-                      childAspectRatio: 1.4,
-                      children: [
-                        DashboardCard(
-                          title: "Calories Consumed",
-                          value: "${_dashboardData!.totalCaloriesConsumed}",
-                          unit: "kcal",
-                          icon: Icons.local_fire_department,
-                          color: TColor.primaryColor1,
-                          progress:
-                              _dashboardData!.totalCaloriesConsumed / 2000,
-                        ),
-                        DashboardCard(
-                          title: "Calories Burned",
-                          value: "${_dashboardData!.totalCaloriesBurned}",
-                          unit: "kcal",
-                          icon: Icons.fitness_center,
-                          color: TColor.secondaryColor1,
-                          progress: _dashboardData!.totalCaloriesBurned / 500,
-                        ),
-                        DashboardCard(
-                          title: "Water Intake",
-                          value: "${_dashboardData!.waterIntake}",
-                          unit: "ml",
-                          icon: Icons.water_drop,
-                          color: Colors.blue,
-                          progress: _dashboardData!.waterIntake / 2000,
-                        ),
-                        DashboardCard(
-                          title: "Steps Taken",
-                          value: "${_dashboardData!.stepsTaken}",
-                          unit: "steps",
-                          icon: Icons.directions_walk,
-                          color: Colors.green,
-                          progress: _dashboardData!.stepsTaken / 10000,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 20),
-                  ],
+                        // Dashboard Cards
+                        if (_dashboardData != null) ...[
+                          Text(
+                            "Today's Overview",
+                            style: TextStyle(
+                              color: TColor.black,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: 15),
+                          GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 15,
+                            mainAxisSpacing: 15,
+                            childAspectRatio: 1.4,
+                            children: [
+                              DashboardCard(
+                                title: "Calories Consumed",
+                                value:
+                                    "${_dashboardData!.totalCaloriesConsumed}",
+                                unit: "kcal",
+                                icon: Icons.local_fire_department,
+                                color: TColor.primaryColor1,
+                                progress:
+                                    _dashboardData!.totalCaloriesConsumed /
+                                    2000,
+                              ),
+                              DashboardCard(
+                                title: "Calories Burned",
+                                value: "${_dashboardData!.totalCaloriesBurned}",
+                                unit: "kcal",
+                                icon: Icons.fitness_center,
+                                color: TColor.secondaryColor1,
+                                progress:
+                                    _dashboardData!.totalCaloriesBurned / 500,
+                              ),
+                              DashboardCard(
+                                title: "Water Intake",
+                                value: "${_dashboardData!.waterIntake}",
+                                unit: "ml",
+                                icon: Icons.water_drop,
+                                color: Colors.blue,
+                                progress: _dashboardData!.waterIntake / 2000,
+                              ),
+                              DashboardCard(
+                                title: "Steps Taken",
+                                value: "${_dashboardData!.stepsTaken}",
+                                unit: "steps",
+                                icon: Icons.directions_walk,
+                                color: Colors.green,
+                                progress: _dashboardData!.stepsTaken / 10000,
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 20),
+                        ],
 
-                  // Today Target
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 15,
-                      horizontal: 15,
-                    ),
-                    decoration: BoxDecoration(
-                      color: TColor.primaryColor2.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
+                        // Today Target
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 15,
+                            horizontal: 15,
+                          ),
+                          decoration: BoxDecoration(
+                            color: TColor.primaryColor2.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "Today Target",
+                                style: TextStyle(
+                                  color: TColor.black,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              SizedBox(
+                                width: 70,
+                                height: 25,
+                                child: RoundButton(
+                                  title: "Check",
+                                  type: RoundButtonType.bgGradient,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  onPressed: () {},
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(height: media.width * 0.05),
+
+                        // Today's Targets
                         Text(
-                          "Today Target",
+                          "Today's Targets",
                           style: TextStyle(
                             color: TColor.black,
-                            fontSize: 14,
+                            fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                        const SizedBox(height: 10),
                         SizedBox(
-                          width: 70,
-                          height: 25,
-                          child: RoundButton(
-                            title: "Check",
-                            type: RoundButtonType.bgGradient,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            onPressed: () {},
+                          height: 80,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 15),
+                            children: [
+                              TodayTargetCell(
+                                icon: "assets/img/burn.png",
+                                value: "320",
+                                title: "Calories",
+                              ),
+                              const SizedBox(width: 15),
+                              TodayTargetCell(
+                                icon: "assets/img/bottle.png",
+                                value: "6.8L",
+                                title: "Water",
+                              ),
+                              const SizedBox(width: 15),
+                              TodayTargetCell(
+                                icon: "assets/img/bed.png",
+                                value: "8h 20m",
+                                title: "Sleep",
+                              ),
+                              const SizedBox(width: 15),
+                              TodayTargetCell(
+                                icon: "assets/img/foot.png",
+                                value: "2400",
+                                title: "Steps",
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
+                        const SizedBox(height: 20),
 
-                  SizedBox(height: media.width * 0.05),
-
-                  // Today's Targets
-                  Text(
-                    "Today's Targets",
-                    style: TextStyle(
-                      color: TColor.black,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    height: 80,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      children: [
-                        TodayTargetCell(
-                          icon: "assets/img/burn.png",
-                          value: "320",
-                          title: "Calories",
+                        // Activity Status (Chart)
+                        Text(
+                          "Activity Status",
+                          style: TextStyle(
+                            color: TColor.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                        const SizedBox(width: 15),
-                        TodayTargetCell(
-                          icon: "assets/img/bottle.png",
-                          value: "6.8L",
-                          title: "Water",
-                        ),
-                        const SizedBox(width: 15),
-                        TodayTargetCell(
-                          icon: "assets/img/bed.png",
-                          value: "8h 20m",
-                          title: "Sleep",
-                        ),
-                        const SizedBox(width: 15),
-                        TodayTargetCell(
-                          icon: "assets/img/foot.png",
-                          value: "2400",
-                          title: "Steps",
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Activity Status (Chart)
-                  Text(
-                    "Activity Status",
-                    style: TextStyle(
-                      color: TColor.black,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(25),
-                    child: Container(
-                      height: media.width * 0.4,
-                      width: double.maxFinite,
-                      decoration: BoxDecoration(
-                        color: TColor.primaryColor2.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: Stack(
-                        alignment: Alignment.topLeft,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 20,
-                              horizontal: 20,
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(25),
+                          child: Container(
+                            height: media.width * 0.4,
+                            width: double.maxFinite,
+                            decoration: BoxDecoration(
+                              color: TColor.primaryColor2.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(25),
                             ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Stack(
+                              alignment: Alignment.topLeft,
                               children: [
-                                Text(
-                                  "Heart Rate",
-                                  style: TextStyle(
-                                    color: TColor.black,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 20,
+                                    horizontal: 20,
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Heart Rate",
+                                        style: TextStyle(
+                                          color: TColor.black,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      ShaderMask(
+                                        blendMode: BlendMode.srcIn,
+                                        shaderCallback: (bounds) {
+                                          return LinearGradient(
+                                            colors: TColor.primaryG,
+                                            begin: Alignment.centerLeft,
+                                            end: Alignment.centerRight,
+                                          ).createShader(
+                                            Rect.fromLTRB(
+                                              0,
+                                              0,
+                                              bounds.width,
+                                              bounds.height,
+                                            ),
+                                          );
+                                        },
+                                        child: Text(
+                                          "78 BPM",
+                                          style: TextStyle(
+                                            color: TColor.white.withOpacity(
+                                              0.7,
+                                            ),
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                ShaderMask(
-                                  blendMode: BlendMode.srcIn,
-                                  shaderCallback: (bounds) {
-                                    return LinearGradient(
-                                      colors: TColor.primaryG,
-                                      begin: Alignment.centerLeft,
-                                      end: Alignment.centerRight,
-                                    ).createShader(
-                                      Rect.fromLTRB(
-                                        0,
-                                        0,
-                                        bounds.width,
-                                        bounds.height,
+                                LineChart(
+                                  LineChartData(
+                                    showingTooltipIndicators:
+                                        showingTooltipOnSpots.map((index) {
+                                          return ShowingTooltipIndicators([
+                                            LineBarSpot(
+                                              LineChartBarData(spots: allSpots),
+                                              0,
+                                              allSpots[index],
+                                            ),
+                                          ]);
+                                        }).toList(),
+                                    lineTouchData: LineTouchData(enabled: true),
+                                    lineBarsData: [
+                                      LineChartBarData(
+                                        spots: allSpots,
+                                        isCurved: false,
+                                        barWidth: 3,
+                                        belowBarData: BarAreaData(
+                                          show: true,
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              TColor.primaryColor2.withOpacity(
+                                                0.4,
+                                              ),
+                                              TColor.primaryColor1.withOpacity(
+                                                0.1,
+                                              ),
+                                            ],
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                          ),
+                                        ),
+                                        dotData: FlDotData(show: false),
+                                        gradient: LinearGradient(
+                                          colors: TColor.primaryG,
+                                        ),
                                       ),
-                                    );
-                                  },
-                                  child: Text(
-                                    "78 BPM",
-                                    style: TextStyle(
-                                      color: TColor.white.withOpacity(0.7),
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 18,
+                                    ],
+                                    minY: 0,
+                                    maxY: 130,
+                                    titlesData: FlTitlesData(show: false),
+                                    gridData: FlGridData(show: false),
+                                    borderData: FlBorderData(
+                                      show: true,
+                                      border: Border.all(
+                                        color: Colors.transparent,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          LineChart(
-                            LineChartData(
-                              showingTooltipIndicators: showingTooltipOnSpots
-                                  .map((index) {
-                                    return ShowingTooltipIndicators([
-                                      LineBarSpot(
-                                        LineChartBarData(spots: allSpots),
-                                        0,
-                                        allSpots[index],
-                                      ),
-                                    ]);
-                                  })
-                                  .toList(),
-                              lineTouchData: LineTouchData(enabled: true),
-                              lineBarsData: [
-                                LineChartBarData(
-                                  spots: allSpots,
-                                  isCurved: false,
-                                  barWidth: 3,
-                                  belowBarData: BarAreaData(
-                                    show: true,
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        TColor.primaryColor2.withOpacity(0.4),
-                                        TColor.primaryColor1.withOpacity(0.1),
-                                      ],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                    ),
-                                  ),
-                                  dotData: FlDotData(show: false),
-                                  gradient: LinearGradient(
-                                    colors: TColor.primaryG,
-                                  ),
-                                ),
-                              ],
-                              minY: 0,
-                              maxY: 130,
-                              titlesData: FlTitlesData(show: false),
-                              gridData: FlGridData(show: false),
-                              borderData: FlBorderData(
-                                show: true,
-                                border: Border.all(color: Colors.transparent),
+                        ),
+
+                        SizedBox(height: media.width * 0.05),
+
+                        // Latest Workouts
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Latest Workouts",
+                              style: TextStyle(
+                                color: TColor.black,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
+                            TextButton(
+                              onPressed: () {},
+                              child: Text(
+                                "See More",
+                                style: TextStyle(
+                                  color: TColor.gray,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        ...lastWorkoutArr.map(
+                          (workout) => WorkoutRow(wObj: workout),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // What to Train
+                        Text(
+                          "What to Train",
+                          style: TextStyle(
+                            color: TColor.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: media.width * 0.05),
-
-                  // Latest Workouts
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Latest Workouts",
-                        style: TextStyle(
-                          color: TColor.black,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: Text(
-                          "See More",
-                          style: TextStyle(color: TColor.gray, fontSize: 14),
+                        const SizedBox(height: 10),
+                        ...tipsArr.map((tip) => WhatTrainRow(wObj: tip)),
+                        const SizedBox(height: 20),
+
+                        // Upcoming Workouts
+                        Text(
+                          "Upcoming Workouts",
+                          style: TextStyle(
+                            color: TColor.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  ...lastWorkoutArr.map((workout) => WorkoutRow(wObj: workout)),
-                  const SizedBox(height: 20),
+                        const SizedBox(height: 10),
+                        ...upcomingWorkoutArr.map(
+                          (workout) => UpcomingWorkoutRow(wObj: workout),
+                        ),
+                        const SizedBox(height: 20),
 
-                  // What to Train
-                  Text(
-                    "What to Train",
-                    style: TextStyle(
-                      color: TColor.black,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                        // Recent Activities
+                        Text(
+                          "Recent Activities",
+                          style: TextStyle(
+                            color: TColor.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ...activitiesArr.map(
+                          (activity) => LatestActivityRow(wObj: activity),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Recent Notifications
+                        Text(
+                          "Recent Notifications",
+                          style: TextStyle(
+                            color: TColor.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ...notificationsArr.map(
+                          (notification) => NotificationRow(nObj: notification),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Popular Exercises
+                        Text(
+                          "Popular Exercises",
+                          style: TextStyle(
+                            color: TColor.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ...exercisesArr.map(
+                          (exercise) =>
+                              ExercisesRow(eObj: exercise, onPressed: () {}),
+                        ),
+
+                        SizedBox(height: media.width * 0.1),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  ...tipsArr.map((tip) => WhatTrainRow(wObj: tip)),
-                  const SizedBox(height: 20),
-
-                  // Upcoming Workouts
-                  Text(
-                    "Upcoming Workouts",
-                    style: TextStyle(
-                      color: TColor.black,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  ...upcomingWorkoutArr.map(
-                    (workout) => UpcomingWorkoutRow(wObj: workout),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Recent Activities
-                  Text(
-                    "Recent Activities",
-                    style: TextStyle(
-                      color: TColor.black,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  ...activitiesArr.map(
-                    (activity) => LatestActivityRow(wObj: activity),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Recent Notifications
-                  Text(
-                    "Recent Notifications",
-                    style: TextStyle(
-                      color: TColor.black,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  ...notificationsArr.map(
-                    (notification) => NotificationRow(nObj: notification),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Popular Exercises
-                  Text(
-                    "Popular Exercises",
-                    style: TextStyle(
-                      color: TColor.black,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  ...exercisesArr.map(
-                    (exercise) =>
-                        ExercisesRow(eObj: exercise, onPressed: () {}),
-                  ),
-
-                  SizedBox(height: media.width * 0.1),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 

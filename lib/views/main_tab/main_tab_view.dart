@@ -6,6 +6,9 @@ import '../home/home_view.dart';
 import '../../screens/workout_tracker_screen.dart';
 import '../../screens/meal_planner_screen.dart';
 import '../profile/profile_view.dart';
+import '../../services/exercise_service.dart';
+import '../../models/exercise.dart';
+import '../../screens/workout_detail_screen.dart';
 
 class MainTabView extends StatefulWidget {
   const MainTabView({super.key});
@@ -44,13 +47,20 @@ class _MainTabViewState extends State<MainTabView> {
     controller.jumpToPage(index);
   }
 
+  void _showGlobalSearchDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const GlobalSearchDialog(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: TColor.white,
       floatingActionButton: InkWell(
         onTap: () {
-          // Future: implement search or central action here
+          _showGlobalSearchDialog(context);
         },
         child: Container(
           width: 55,
@@ -124,6 +134,361 @@ class ProfileTabView extends StatelessWidget {
         ],
       ),
       body: ProfileView(),
+    );
+  }
+}
+
+class GlobalSearchDialog extends StatefulWidget {
+  const GlobalSearchDialog({super.key});
+
+  @override
+  State<GlobalSearchDialog> createState() => _GlobalSearchDialogState();
+}
+
+class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
+  final TextEditingController _searchController = TextEditingController();
+  final ExerciseService _exerciseService = ExerciseService();
+
+  List<Exercise> _searchResults = [];
+  bool _isLoading = false;
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _performSearch(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _searchQuery = '';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _searchQuery = query;
+    });
+
+    try {
+      // Get all exercises and filter locally for better performance
+      final allExercises = await _exerciseService.getAllExercises();
+
+      final results = allExercises.where((exercise) {
+        final nameMatch = exercise.name.toLowerCase().contains(
+          query.toLowerCase(),
+        );
+        final descriptionMatch = exercise.description.toLowerCase().contains(
+          query.toLowerCase(),
+        );
+        final categoryMatch = exercise.category.toLowerCase().contains(
+          query.toLowerCase(),
+        );
+        final muscleGroupMatch = exercise.muscleGroups.any(
+          (muscle) => muscle.toLowerCase().contains(query.toLowerCase()),
+        );
+
+        return nameMatch ||
+            descriptionMatch ||
+            categoryMatch ||
+            muscleGroupMatch;
+      }).toList();
+
+      setState(() {
+        _searchResults = results;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _searchResults = [];
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Search failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _navigateToWorkoutDetail(Exercise exercise) {
+    Navigator.pop(context); // Close search dialog
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WorkoutDetailScreen(exercise: exercise),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            // Header with search bar
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: TColor.primaryColor1.withOpacity(0.1),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.search, color: TColor.primaryColor1),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText:
+                            'Search workouts, exercises, muscle groups...',
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(color: TColor.gray),
+                      ),
+                      onChanged: _performSearch,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.close, color: TColor.gray),
+                  ),
+                ],
+              ),
+            ),
+
+            // Search results
+            Expanded(
+              child: _isLoading
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: TColor.primaryColor1,
+                      ),
+                    )
+                  : _searchQuery.isEmpty
+                  ? _buildSearchSuggestions()
+                  : _searchResults.isEmpty
+                  ? _buildNoResults()
+                  : _buildSearchResults(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchSuggestions() {
+    final suggestions = [
+      {
+        'title': 'Popular Searches',
+        'items': ['Push-up', 'Plank', 'Squats', 'Lunges'],
+      },
+      {
+        'title': 'Muscle Groups',
+        'items': ['Chest', 'Back', 'Legs', 'Core'],
+      },
+      {
+        'title': 'Categories',
+        'items': ['Strength', 'Cardio', 'Flexibility'],
+      },
+    ];
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: suggestions.length,
+      itemBuilder: (context, index) {
+        final section = suggestions[index];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              section['title'] as String,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: TColor.black,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: (section['items'] as List<String>).map((item) {
+                return GestureDetector(
+                  onTap: () {
+                    _searchController.text = item;
+                    _performSearch(item);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: TColor.primaryColor1.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: TColor.primaryColor1.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      item,
+                      style: TextStyle(color: TColor.primaryColor1),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildNoResults() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off, size: 64, color: TColor.gray),
+          const SizedBox(height: 16),
+          Text(
+            'No results found for "$_searchQuery"',
+            style: TextStyle(color: TColor.gray, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Try different keywords or browse categories',
+            style: TextStyle(color: TColor.gray, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchResults() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        final exercise = _searchResults[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(12),
+            leading: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                gradient: LinearGradient(colors: TColor.primaryG),
+              ),
+              child: exercise.displayImage.startsWith('http')
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        exercise.displayImage,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          exercise.isWorkout
+                              ? Icons.fitness_center
+                              : Icons.sports_gymnastics,
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      exercise.isWorkout
+                          ? Icons.fitness_center
+                          : Icons.sports_gymnastics,
+                      color: Colors.white,
+                    ),
+            ),
+            title: Text(
+              exercise.name,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: TColor.black,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  exercise.category,
+                  style: TextStyle(color: TColor.primaryColor1, fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  exercise.muscleGroups.join(', '),
+                  style: TextStyle(color: TColor.gray, fontSize: 12),
+                ),
+                if (exercise.duration != null || exercise.calories != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        if (exercise.duration != null) ...[
+                          Icon(Icons.schedule, size: 12, color: TColor.gray),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${exercise.duration} min',
+                            style: TextStyle(color: TColor.gray, fontSize: 12),
+                          ),
+                        ],
+                        if (exercise.duration != null &&
+                            exercise.calories != null)
+                          const SizedBox(width: 12),
+                        if (exercise.calories != null) ...[
+                          Icon(
+                            Icons.local_fire_department,
+                            size: 12,
+                            color: Colors.orange,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${exercise.calories} cal',
+                            style: TextStyle(color: TColor.gray, fontSize: 12),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            trailing: Icon(
+              Icons.arrow_forward_ios,
+              color: TColor.gray,
+              size: 16,
+            ),
+            onTap: () => _navigateToWorkoutDetail(exercise),
+          ),
+        );
+      },
     );
   }
 }

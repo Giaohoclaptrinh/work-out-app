@@ -23,10 +23,10 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
   final List<String> _categories = ['breakfast', 'lunch', 'dinner', 'snack'];
 
   final Map<String, String> _categoryNames = {
-    'breakfast': 'Bữa sáng',
-    'lunch': 'Bữa trưa',
-    'dinner': 'Bữa tối',
-    'snack': 'Ăn vặt',
+    'breakfast': 'Breakfast',
+    'lunch': 'Lunch',
+    'dinner': 'Dinner',
+    'snack': 'Snack',
   };
 
   @override
@@ -321,7 +321,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Tổng Calories',
+                                'Total Calories',
                                 style: TextStyle(
                                   color: TColor.gray,
                                   fontSize: 14,
@@ -380,7 +380,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
                                   SizedBox(
                                     width: 100,
                                     child: RoundButton(
-                                      title: 'Thêm món',
+                                      title: 'Add Meal',
                                       onPressed: () => _addMeal(category),
                                       fontSize: 12,
                                     ),
