@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../common/color_extension.dart';
+import '../utils/settings_helper.dart';
 import '../widgets/round_button.dart';
 
 class BodyDataInputScreen extends StatefulWidget {
@@ -168,14 +169,14 @@ class _BodyDataInputScreenState extends State<BodyDataInputScreen> {
                           children: [
                             Expanded(
                               child: _buildInputField(
-                                'Height (cm)',
+                                'Height (${SettingsHelper.getUnits(context) == 'Imperial' ? 'ft/in' : 'cm'})',
                                 Icons.height,
                               ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
                               child: _buildInputField(
-                                'Weight (kg)',
+                                'Weight (${SettingsHelper.getUnits(context) == 'Imperial' ? 'lbs' : 'kg'})',
                                 Icons.monitor_weight,
                               ),
                             ),

@@ -1,5 +1,6 @@
-import 'package:workout_app/common/color_extension.dart';
 import 'package:flutter/material.dart';
+import '../common/color_extension.dart';
+import '../utils/settings_helper.dart';
 import 'package:simple_animation_progress_bar/simple_animation_progress_bar.dart';
 
 class WorkoutRow extends StatelessWidget {
@@ -21,9 +22,19 @@ class WorkoutRow extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
       decoration: BoxDecoration(
-        color: TColor.white,
+        color: SettingsHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
+        border: Border.all(
+          color: SettingsHelper.getBorderColor(context),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: SettingsHelper.getShadowColor(context),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -59,16 +70,20 @@ class WorkoutRow extends StatelessWidget {
               children: [
                 Text(
                   wObj["name"]?.toString() ?? "Workout",
-                  style: TextStyle(color: TColor.black, fontSize: 12),
+                  style: SettingsHelper.getTextStyleWithOverflow(
+                    context,
+                    fontSize: 16,
+                  ),
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
 
                 Text(
                   "${wObj["kcal"]?.toString() ?? "0"} Calories Burn | ${wObj["time"]?.toString() ?? "0"} minutes",
-                  style: TextStyle(color: TColor.gray, fontSize: 10),
+                  style: SettingsHelper.getSubtitleStyleWithOverflow(
+                    context,
+                    fontSize: 14,
+                  ),
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
 
                 const SizedBox(height: 4),
@@ -150,7 +165,7 @@ class WorkoutRow extends StatelessWidget {
                           "Start",
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 12,
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

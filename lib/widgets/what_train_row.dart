@@ -39,11 +39,15 @@ class WhatTrainRow extends StatelessWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     "${wObj["exercises"]?.toString() ?? "0"} | ${wObj["time"]?.toString() ?? "0 min"}",
                     style: TextStyle(color: TColor.gray, fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                   const SizedBox(height: 15),
                   SizedBox(

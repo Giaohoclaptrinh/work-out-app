@@ -538,9 +538,15 @@ class _AuthScreenState extends State<AuthScreen> {
 
                   // Social login options
                   SettingRow(
-                    icon: 'assets/img/google.png',
                     title: 'Continue with Google',
-                    onPressed: () {
+                    subtitle: 'Sign in with your Google account',
+                    icon: Icons.g_mobiledata,
+                    trailing: Image.asset(
+                      'assets/img/google.png',
+                      width: 24,
+                      height: 24,
+                    ),
+                    onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Google login coming soon!'),
@@ -551,9 +557,15 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                   const SizedBox(height: 12),
                   SettingRow(
-                    icon: 'assets/img/facebook.png',
                     title: 'Continue with Facebook',
-                    onPressed: () {
+                    subtitle: 'Sign in with your Facebook account',
+                    icon: Icons.facebook,
+                    trailing: Image.asset(
+                      'assets/img/facebook.png',
+                      width: 24,
+                      height: 24,
+                    ),
+                    onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Facebook login coming soon!'),

@@ -3,8 +3,11 @@ import '../common/color_extension.dart';
 import '../models/meal.dart';
 import '../services/meal_service.dart';
 import '../utils/firestore_helper.dart';
+import '../utils/settings_helper.dart';
 import '../widgets/round_button.dart';
 import '../widgets/meal_row.dart';
+import '../widgets/meal_category_cell.dart';
+import '../widgets/find_eat_cell.dart';
 
 class MealPlannerScreen extends StatefulWidget {
   const MealPlannerScreen({super.key});
@@ -213,21 +216,20 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: TColor.white,
+      backgroundColor: SettingsHelper.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: TColor.white,
+        backgroundColor: SettingsHelper.getCardColor(context),
         centerTitle: true,
         elevation: 0,
         title: Text(
           'Meal Planner',
-          style: TextStyle(
-            color: TColor.black,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          style: SettingsHelper.getTitleStyle(context),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: TColor.black),
+          icon: Icon(
+            Icons.arrow_back,
+            color: SettingsHelper.getTextColor(context),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [

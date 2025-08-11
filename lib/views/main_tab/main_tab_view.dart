@@ -434,6 +434,8 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                 fontWeight: FontWeight.bold,
                 color: TColor.black,
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,11 +443,15 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                 Text(
                   exercise.category,
                   style: TextStyle(color: TColor.primaryColor1, fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   exercise.muscleGroups.join(', '),
                   style: TextStyle(color: TColor.gray, fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
                 if (exercise.duration != null || exercise.calories != null)
                   Padding(
@@ -455,9 +461,16 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                         if (exercise.duration != null) ...[
                           Icon(Icons.schedule, size: 12, color: TColor.gray),
                           const SizedBox(width: 4),
-                          Text(
-                            '${exercise.duration} min',
-                            style: TextStyle(color: TColor.gray, fontSize: 12),
+                          Expanded(
+                            child: Text(
+                              '${exercise.duration} min',
+                              style: TextStyle(
+                                color: TColor.gray,
+                                fontSize: 12,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                           ),
                         ],
                         if (exercise.duration != null &&
@@ -470,9 +483,16 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                             color: Colors.orange,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '${exercise.calories} cal',
-                            style: TextStyle(color: TColor.gray, fontSize: 12),
+                          Expanded(
+                            child: Text(
+                              '${exercise.calories} cal',
+                              style: TextStyle(
+                                color: TColor.gray,
+                                fontSize: 12,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                           ),
                         ],
                       ],

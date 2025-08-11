@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../common/color_extension.dart';
 import '../services/daily_stats_service.dart';
 import '../utils/debug_helper.dart';
+import '../utils/settings_helper.dart';
 
 class BMIChartScreen extends StatefulWidget {
   const BMIChartScreen({super.key});
@@ -46,8 +47,12 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: SettingsHelper.getBackgroundColor(context),
       appBar: AppBar(
-        title: const Text('BMI Progress'),
+        title: Text(
+          'BMI Progress',
+          style: SettingsHelper.getTitleStyle(context, color: Colors.white),
+        ),
         backgroundColor: TColor.primaryColor1,
         foregroundColor: Colors.white,
         actions: [
@@ -55,7 +60,9 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(color: TColor.primaryColor1),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -109,6 +116,8 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -118,6 +127,8 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -127,6 +138,8 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                   ],
                 ),
@@ -170,20 +183,19 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
     );
   }
 
-  Widget _buildCategoryItem(String label, double threshold, Color color, double? currentBMI) {
-    final isCurrent = currentBMI != null && 
-        ((threshold == 18.5 && currentBMI < 18.5) ||
-         (threshold == 25.0 && currentBMI >= 18.5 && currentBMI < 25.0) ||
-         (threshold == 30.0 && currentBMI >= 25.0 && currentBMI < 30.0) ||
-         (threshold == 40.0 && currentBMI >= 30.0));
-
+  Widget _buildCategoryItem(
+    String label,
+    double threshold,
+    Color color,
+    double? currentBMI,
+  ) {
+    final isCurrent = currentBMI != null && currentBMI < threshold;
     return Expanded(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 2),
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         decoration: BoxDecoration(
-          color: isCurrent ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          color: isCurrent ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
           children: [
@@ -195,6 +207,8 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
                 color: isCurrent ? color : Colors.white.withValues(alpha: 0.8),
               ),
               textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
             const SizedBox(height: 2),
             Text(
@@ -203,6 +217,9 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
                 fontSize: 8,
                 color: isCurrent ? color : Colors.white.withValues(alpha: 0.6),
               ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ],
         ),
@@ -212,7 +229,7 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
 
   Widget _buildChartSection() {
     final chartData = _getChartData();
-    
+
     if (chartData.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(40),
@@ -253,7 +270,7 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SettingsHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
@@ -268,18 +285,18 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.trending_up,
-                color: TColor.primaryColor1,
-                size: 24,
-              ),
+              Icon(Icons.trending_up, color: TColor.primaryColor1, size: 24),
               const SizedBox(width: 8),
-              Text(
-                'BMI Progress (Last 7 Days)',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: TColor.black,
+              Expanded(
+                child: Text(
+                  'BMI Progress', // Rút gọn title
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: TColor.black,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
@@ -339,13 +356,19 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
                       },
                     ),
                   ),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                 ),
                 borderData: FlBorderData(
                   show: true,
                   border: Border(
-                    bottom: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
+                    bottom: BorderSide(
+                      color: Colors.grey.withValues(alpha: 0.3),
+                    ),
                     left: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
                   ),
                 ),
@@ -358,10 +381,7 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
                     }).toList(),
                     isCurved: true,
                     gradient: LinearGradient(
-                      colors: [
-                        TColor.primaryColor1,
-                        TColor.primaryColor2,
-                      ],
+                      colors: [TColor.primaryColor1, TColor.primaryColor2],
                     ),
                     barWidth: 4,
                     isStrokeCapRound: true,
@@ -400,14 +420,29 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
   }
 
   Widget _buildBMIRangeLegend() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildLegendItem('Underweight', '< 18.5', Colors.blue),
-        _buildLegendItem('Normal', '18.5-25', Colors.green),
-        _buildLegendItem('Overweight', '25-30', Colors.orange),
-        _buildLegendItem('Obese', '> 30', Colors.red),
-      ],
+    return Container(
+      height: 35, // Giảm chiều cao
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Expanded(
+            child: _buildLegendItem(
+              'Under',
+              '< 18.5',
+              Colors.blue,
+            ), // Rút gọn text
+          ),
+          Expanded(child: _buildLegendItem('Normal', '18.5-25', Colors.green)),
+          Expanded(
+            child: _buildLegendItem(
+              'Over',
+              '25-30',
+              Colors.orange,
+            ), // Rút gọn text
+          ),
+          Expanded(child: _buildLegendItem('Obese', '> 30', Colors.red)),
+        ],
+      ),
     );
   }
 
@@ -415,31 +450,35 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
     return Row(
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 8, // Giảm kích thước
+          height: 8, // Giảm kích thước
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(1), // Giảm border radius
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 2), // Giảm khoảng cách
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               label,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 6, // Giảm xuống 6px
                 fontWeight: FontWeight.w600,
                 color: TColor.black,
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
             Text(
               range,
               style: TextStyle(
-                fontSize: 8,
+                fontSize: 5, // Giảm xuống 5px
                 color: Colors.grey.withValues(alpha: 0.7),
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ],
         ),

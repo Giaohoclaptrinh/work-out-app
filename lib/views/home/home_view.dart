@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../common/color_extension.dart';
 import '../../services/dashboard_service.dart';
 import '../../models/dashboard_data.dart';
@@ -20,6 +22,10 @@ import '../../services/notification_service.dart';
 import '../../services/daily_stats_service.dart';
 import '../../screens/bmi_chart_screen.dart';
 import '../../utils/debug_helper.dart';
+import '../../utils/settings_helper.dart';
+import '../../screens/meal_planner_screen.dart';
+import '../../screens/workout_tracker_screen.dart';
+import '../../screens/settings_screen.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -410,7 +416,7 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     final media = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: TColor.white,
+      backgroundColor: SettingsHelper.getBackgroundColor(context),
       body: _isLoading
           ? Center(
               child: CircularProgressIndicator(color: TColor.primaryColor1),
@@ -449,86 +455,70 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                         SizedBox(height: media.width * 0.05),
 
                         // TODAY OVERVIEW
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              "Today's Overview",
-                              style: TextStyle(
-                                color: TColor.black,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () =>
-                                  _loadDashboardData(forceRefresh: true),
-                              icon: Icon(
-                                Icons.refresh,
-                                color: TColor.primaryColor1,
-                                size: 20,
-                              ),
-                              tooltip: 'Refresh dashboard data',
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 15),
                         if (_dashboardData != null)
-                          GridView.count(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 15,
-                            mainAxisSpacing: 15,
-                            childAspectRatio: 1.4,
-                            children: [
-                              DashboardCard(
-                                title: "Calories Consumed",
-                                value:
-                                    (_dashboardData?.totalCaloriesConsumed ?? 0)
-                                        .toString(),
-                                unit: "kcal",
-                                icon: Icons.local_fire_department,
-                                color: TColor.primaryColor1,
-                                progress:
-                                    (_dashboardData?.totalCaloriesConsumed ??
-                                        0) /
-                                    2000,
-                              ),
-                              DashboardCard(
-                                title: "Calories Burned",
-                                value:
-                                    (_dashboardData?.totalCaloriesBurned ?? 0)
-                                        .toString(),
-                                unit: "kcal",
-                                icon: Icons.fitness_center,
-                                color: TColor.secondaryColor1,
-                                progress:
-                                    (_dashboardData?.totalCaloriesBurned ?? 0) /
-                                    500,
-                              ),
-                              DashboardCard(
-                                title: "Water Intake",
-                                value: (_dashboardData?.waterIntake ?? 0.0)
-                                    .toStringAsFixed(1),
-                                unit: "ml",
-                                icon: Icons.water_drop,
-                                color: Colors.blue,
-                                progress:
-                                    (_dashboardData?.waterIntake ?? 0.0) / 2000,
-                              ),
-                              DashboardCard(
-                                title: "Steps Taken",
-                                value: (_dashboardData?.stepsTaken ?? 0)
-                                    .toString(),
-                                unit: "steps",
-                                icon: Icons.directions_walk,
-                                color: Colors.green,
-                                progress:
-                                    (_dashboardData?.stepsTaken ?? 0) / 10000,
-                              ),
-                            ],
-                          ),
+                          SettingsHelper.createFixedFontTodayOverviewSection(
+                                  title: "Today's Overview",
+                                  dashboardCards: [
+                                    DashboardCard(
+                                      title: "Calories Consumed",
+                                      value:
+                                          (_dashboardData
+                                                      ?.totalCaloriesConsumed ??
+                                                  0)
+                                              .toString(),
+                                      unit: "kcal",
+                                      icon: Icons.local_fire_department,
+                                      color: TColor.primaryColor1,
+                                      progress:
+                                          (_dashboardData
+                                                  ?.totalCaloriesConsumed ??
+                                              0) /
+                                          2000,
+                                    ),
+                                    DashboardCard(
+                                      title: "Calories Burned",
+                                      value:
+                                          (_dashboardData
+                                                      ?.totalCaloriesBurned ??
+                                                  0)
+                                              .toString(),
+                                      unit: "kcal",
+                                      icon: Icons.fitness_center,
+                                      color: TColor.secondaryColor1,
+                                      progress:
+                                          (_dashboardData
+                                                  ?.totalCaloriesBurned ??
+                                              0) /
+                                          500,
+                                    ),
+                                    DashboardCard(
+                                      title: "Water Intake",
+                                      value:
+                                          (_dashboardData?.waterIntake ?? 0.0)
+                                              .toStringAsFixed(1),
+                                      unit: "ml",
+                                      icon: Icons.water_drop,
+                                      color: Colors.blue,
+                                      progress:
+                                          (_dashboardData?.waterIntake ?? 0.0) /
+                                          2000,
+                                    ),
+                                    DashboardCard(
+                                      title: "Steps Taken",
+                                      value: (_dashboardData?.stepsTaken ?? 0)
+                                          .toString(),
+                                      unit: "steps",
+                                      icon: Icons.directions_walk,
+                                      color: Colors.green,
+                                      progress:
+                                          (_dashboardData?.stepsTaken ?? 0) /
+                                          10000,
+                                    ),
+                                  ],
+                                  onRefresh: () =>
+                                      _loadDashboardData(forceRefresh: true),
+                                  context: context,
+                                ),
 
                         const SizedBox(height: 20),
 
@@ -545,12 +535,16 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                "Today Target",
-                                style: TextStyle(
-                                  color: TColor.black,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
+                              Expanded(
+                                child: Text(
+                                  "Today Target",
+                                  style: TextStyle(
+                                    color: TColor.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ),
                               SizedBox(
@@ -701,22 +695,28 @@ class _WelcomeHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Welcome Back,",
-              style: TextStyle(color: TColor.gray, fontSize: 12),
-            ),
-            Text(
-              name,
-              style: TextStyle(
-                color: TColor.black,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Welcome Back,",
+                style: TextStyle(color: TColor.gray, fontSize: 12),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
-            ),
-          ],
+              Text(
+                name,
+                style: TextStyle(
+                  color: TColor.black,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ],
+          ),
         ),
         IconButton(
           onPressed: onBellPressed,
@@ -736,7 +736,9 @@ class _BMICard extends StatelessWidget {
   final String bmiStatus;
   final VoidCallback onViewMore;
   final List<PieChartSectionData> sections;
+
   const _BMICard({
+    super.key,
     required this.media,
     required this.bmiStatus,
     required this.onViewMore,
@@ -746,7 +748,10 @@ class _BMICard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: media.width * 0.4,
+      constraints: BoxConstraints(
+        minHeight: media.width * 0.35,
+        maxHeight: media.width * 0.45,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: TColor.primaryG),
         borderRadius: BorderRadius.circular(media.width * 0.075),
@@ -761,43 +766,51 @@ class _BMICard extends StatelessWidget {
             fit: BoxFit.fitHeight,
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 25),
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 25),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "BMI (Body Mass Index)",
-                      style: TextStyle(
-                        color: TColor.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                Flexible(
+                  child: SettingsHelper.createFlexibleColumn(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "BMI (Body Mass Index)",
+                        style: TextStyle(
+                          color: TColor.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                       ),
-                    ),
-                    Text(
-                      bmiStatus,
-                      style: TextStyle(
-                        color: TColor.white.withValues(alpha: 0.7),
-                        fontSize: 12,
+                      const SizedBox(height: 4),
+                      Text(
+                        bmiStatus,
+                        style: TextStyle(
+                          color: TColor.white.withValues(alpha: 0.7),
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
-                    ),
-                    SizedBox(height: media.width * 0.05),
-                    SizedBox(
-                      width: 120,
-                      height: 35,
-                      child: RoundButton(
-                        title: "View More",
-                        type: RoundButtonType.bgSGradient,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        onPressed: onViewMore,
+                      SizedBox(height: media.width * 0.02),
+                      SizedBox(
+                        width: 120,
+                        height: 30,
+                        child: RoundButton(
+                          title: "View More",
+                          type: RoundButtonType.bgSGradient,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          onPressed: onViewMore,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 16),
                 AspectRatio(
                   aspectRatio: 1,
                   child: PieChart(
@@ -819,6 +832,7 @@ class _BMICard extends StatelessWidget {
     );
   }
 }
+
 
 class _ActivityStatusCard extends StatelessWidget {
   final Size media;

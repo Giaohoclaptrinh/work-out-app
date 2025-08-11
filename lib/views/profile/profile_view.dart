@@ -1,20 +1,29 @@
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:animated_toggle_switch/animated_toggle_switch.dart';
+import 'package:provider/provider.dart';
 import '../../common/color_extension.dart';
-import '../../screens/auth_screen.dart';
+import '../../services/auth_service.dart';
 import '../../services/notification_service.dart';
-import '../../services/exercise_service.dart';
-import '../../services/cache_service.dart';
+import '../../utils/settings_helper.dart';
+import '../../widgets/profile_setting_row.dart';
+import '../../screens/settings_screen.dart';
+import '../../screens/bmi_chart_screen.dart';
+import '../../screens/meal_planner_screen.dart';
+import '../../screens/workout_tracker_screen.dart';
 import '../../widgets/round_button.dart';
-import '../../widgets/setting_row.dart';
-import '../../widgets/title_subtitle_cell.dart';
-import '../../widgets/today_target_cell.dart';
 import '../../widgets/latest_activity_row.dart';
 import '../../widgets/notification_row.dart';
 import '../../widgets/round_textfield.dart';
-import '../../screens/settings_screen.dart';
-import 'package:animated_toggle_switch/animated_toggle_switch.dart';
+import '../../widgets/title_subtitle_cell.dart';
+import '../../widgets/today_target_cell.dart';
+import '../../screens/auth_screen.dart';
+import '../../services/dashboard_service.dart';
+import '../../services/exercise_service.dart';
+import '../../services/cache_service.dart';
+import '../../models/dashboard_data.dart';
+import '../../utils/debug_helper.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -312,14 +321,16 @@ class _ProfileViewState extends State<ProfileView> {
             children: [
               RoundTextField(
                 controller: weightController,
-                hintText: 'Weight (kg)',
+                hintText:
+                    'Weight (${SettingsHelper.getUnits(context) == 'Imperial' ? 'lbs' : 'kg'})',
                 icon: "assets/img/weight.png",
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 15),
               RoundTextField(
                 controller: heightController,
-                hintText: 'Height (cm)',
+                hintText:
+                    'Height (${SettingsHelper.getUnits(context) == 'Imperial' ? 'ft/in' : 'cm'})',
                 icon: "assets/img/hight.png",
                 keyboardType: TextInputType.number,
               ),
@@ -478,7 +489,7 @@ class _ProfileViewState extends State<ProfileView> {
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: TColor.lightGray.withOpacity(0.3),
+                              color: TColor.lightGray.withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -558,7 +569,10 @@ class _ProfileViewState extends State<ProfileView> {
         ),
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.8),
+            fontSize: 12,
+          ),
         ),
       ],
     );
@@ -603,8 +617,8 @@ class _ProfileViewState extends State<ProfileView> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: achieved
-            ? TColor.primaryColor1.withOpacity(0.1)
-            : TColor.lightGray.withOpacity(0.3),
+            ? TColor.primaryColor1.withValues(alpha: 0.1)
+            : TColor.lightGray.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: achieved ? TColor.primaryColor1 : TColor.gray,
@@ -664,7 +678,7 @@ class _ProfileViewState extends State<ProfileView> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: TColor.primaryColor1.withOpacity(0.1),
+                    color: TColor.primaryColor1.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -715,7 +729,7 @@ class _ProfileViewState extends State<ProfileView> {
         final user = snapshot.data ?? {};
 
         return Scaffold(
-          backgroundColor: TColor.white,
+          backgroundColor: SettingsHelper.getBackgroundColor(context),
           body: SingleChildScrollView(
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 25),
@@ -741,8 +755,8 @@ class _ProfileViewState extends State<ProfileView> {
                           children: [
                             Text(
                               user['displayName'] ?? 'Stefani Wong',
-                              style: TextStyle(
-                                color: TColor.black,
+                              style: SettingsHelper.getTextStyle(
+                                context,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -750,8 +764,8 @@ class _ProfileViewState extends State<ProfileView> {
                             Text(
                               (user['goals'] as List?)?.join(', ') ??
                                   'Lose a Fat Program',
-                              style: TextStyle(
-                                color: TColor.gray,
+                              style: SettingsHelper.getSubtitleStyle(
+                                context,
                                 fontSize: 12,
                               ),
                             ),
@@ -780,15 +794,29 @@ class _ProfileViewState extends State<ProfileView> {
                     children: [
                       Expanded(
                         child: TitleSubtitleCell(
-                          title: "${user['height'] ?? '180'}cm",
+                          title: SettingsHelper.formatHeight(
+                            context,
+                            (user['height'] ?? 180).toDouble(),
+                          ),
                           subtitle: "Height",
+                          titleColor: SettingsHelper.getPrimaryColor(context),
+                          subtitleColor: SettingsHelper.getSecondaryTextColor(
+                            context,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 15),
                       Expanded(
                         child: TitleSubtitleCell(
-                          title: "${user['weight'] ?? '65'}kg",
+                          title: SettingsHelper.formatWeight(
+                            context,
+                            (user['weight'] ?? 65).toDouble(),
+                          ),
                           subtitle: "Weight",
+                          titleColor: SettingsHelper.getPrimaryColor(context),
+                          subtitleColor: SettingsHelper.getSecondaryTextColor(
+                            context,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 15),
@@ -796,6 +824,10 @@ class _ProfileViewState extends State<ProfileView> {
                         child: TitleSubtitleCell(
                           title: "${user['age'] ?? '22'}yo",
                           subtitle: "Age",
+                          titleColor: SettingsHelper.getPrimaryColor(context),
+                          subtitleColor: SettingsHelper.getSecondaryTextColor(
+                            context,
+                          ),
                         ),
                       ),
                     ],
@@ -873,11 +905,12 @@ class _ProfileViewState extends State<ProfileView> {
                         const SizedBox(height: 8),
                         ListView.builder(
                           physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
                           shrinkWrap: true,
                           itemCount: accountArr.length,
                           itemBuilder: (context, index) {
                             var iObj = accountArr[index] as Map? ?? {};
-                            return SettingRow(
+                            return ProfileSettingRow(
                               icon:
                                   iObj["image"]?.toString() ??
                                   "assets/img/p_personal.png",
@@ -1079,7 +1112,7 @@ class _ProfileViewState extends State<ProfileView> {
                           itemCount: otherArr.length,
                           itemBuilder: (context, index) {
                             var iObj = otherArr[index] as Map? ?? {};
-                            return SettingRow(
+                            return ProfileSettingRow(
                               icon:
                                   iObj["image"]?.toString() ??
                                   "assets/img/p_setting.png",
@@ -1093,7 +1126,7 @@ class _ProfileViewState extends State<ProfileView> {
                           },
                         ),
                         const SizedBox(height: 8),
-                        SettingRow(
+                        ProfileSettingRow(
                           icon: "assets/img/p_next.png",
                           title: "Sign Out",
                           onPressed: () async {

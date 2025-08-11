@@ -1,40 +1,65 @@
 import 'package:flutter/material.dart';
-
-import 'package:workout_app/common/color_extension.dart';
+import '../common/color_extension.dart';
 
 class SettingRow extends StatelessWidget {
-  final String icon;
   final String title;
-  final VoidCallback onPressed;
-  const SettingRow({super.key, required this.icon, required this.title, required this.onPressed });
+  final String subtitle;
+  final IconData icon;
+  final Widget trailing;
+  final VoidCallback? onTap;
+
+  const SettingRow({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.trailing,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      child: SizedBox(
-        height: 30,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Image.asset(icon,
-                height: 15, width: 15, fit: BoxFit.contain),
-            const SizedBox(
-              width: 15,
-            ),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: TColor.black,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            Image.asset("assets/img/p_next.png",
-                height: 12, width: 12, fit: BoxFit.contain)
-          ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: TColor.primaryColor1.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: TColor.primaryColor1, size: 20),
         ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: TColor.black,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.withValues(alpha: 0.7),
+          ),
+        ),
+        trailing: trailing,
+        onTap: onTap,
       ),
     );
   }

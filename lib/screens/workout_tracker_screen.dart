@@ -10,6 +10,7 @@ import '../widgets/what_train_row.dart';
 import '../widgets/round_textfield.dart';
 import '../services/upload_exercises.dart';
 import 'workout_detail_screen.dart';
+import '../utils/settings_helper.dart';
 
 class WorkoutTrackerScreen extends StatefulWidget {
   const WorkoutTrackerScreen({super.key});
@@ -294,18 +295,14 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: TColor.white,
+      backgroundColor: SettingsHelper.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: TColor.white,
+        backgroundColor: SettingsHelper.getCardColor(context),
         centerTitle: true,
         elevation: 0,
         title: Text(
           "Workout Tracker",
-          style: TextStyle(
-            color: TColor.black,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+          style: SettingsHelper.getTitleStyle(context),
         ),
         actions: [
           IconButton(
@@ -322,12 +319,27 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
         bottom: TabBar(
           controller: _tabController,
           labelColor: TColor.primaryColor1,
-          unselectedLabelColor: TColor.gray,
+          unselectedLabelColor: SettingsHelper.getSecondaryTextColor(context),
           indicatorColor: TColor.primaryColor1,
-          tabs: const [
-            Tab(text: "Workouts"),
-            Tab(text: "Favorites"),
-            Tab(text: "History"),
+          tabs: [
+            Tab(
+              child: Text(
+                "Workouts",
+                style: SettingsHelper.getTextStyle(context, fontSize: 14),
+              ),
+            ),
+            Tab(
+              child: Text(
+                "Favorites",
+                style: SettingsHelper.getTextStyle(context, fontSize: 14),
+              ),
+            ),
+            Tab(
+              child: Text(
+                "History",
+                style: SettingsHelper.getTextStyle(context, fontSize: 14),
+              ),
+            ),
           ],
         ),
       ),
@@ -339,19 +351,40 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
             child: Column(
               children: [
                 // Search Bar
-                SizedBox(
+                Container(
                   height: 45,
-                  child: RoundTextField(
+                  decoration: BoxDecoration(
+                    color: SettingsHelper.getCardColor(context),
+                    borderRadius: BorderRadius.circular(22.5),
+                    border: Border.all(
+                      color: SettingsHelper.getSecondaryTextColor(context),
+                      width: 1,
+                    ),
+                  ),
+                  child: TextField(
                     controller: _searchController,
-                    hintText: "Search workouts...",
                     onChanged: _onSearchChanged,
+                    style: SettingsHelper.getTextStyle(context),
+                    decoration: InputDecoration(
+                      hintText: "Search workouts...",
+                      hintStyle: SettingsHelper.getSubtitleStyle(context),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: SettingsHelper.getSecondaryTextColor(context),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
 
                 // Category Filter
                 SizedBox(
-                  height: 45, // chỉnh sửa lại nếu cần thiết
+                  height: 45,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: _categories.length,
@@ -361,14 +394,42 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
 
                       return Container(
                         margin: const EdgeInsets.only(right: 10),
-                        child: RoundButton(
-                          title: category,
-                          type: isSelected
-                              ? RoundButtonType.bgGradient
-                              : RoundButtonType.textGradient,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          onPressed: () => _onCategoryChanged(category),
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 80,
+                            maxWidth: 150,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? TColor.primaryColor1
+                                : SettingsHelper.getCardColor(context),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? TColor.primaryColor1
+                                  : SettingsHelper.getSecondaryTextColor(
+                                      context,
+                                    ),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            category,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : SettingsHelper.getTextColor(context),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       );
                     },
