@@ -479,17 +479,16 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
               )
             else
               ..._filteredWorkouts.map(
-                (workout) => GestureDetector(
-                  onTap: () => _navigateToWorkoutDetail(workout),
-                  child: WorkoutRow(
-                    wObj: {
-                      'name': workout.name,
-                      'image': workout.displayImage,
-                      'kcal': workout.calories.toString(),
-                      'time': workout.duration.toString(),
-                      'progress': 0.0,
-                    },
-                  ),
+                (workout) => WorkoutRow(
+                  wObj: {
+                    'name': workout.name,
+                    'image': workout.displayImage,
+                    'kcal': workout.calories.toString(),
+                    'time': workout.duration.toString(),
+                    'progress': 0.0,
+                    'id': workout.id,
+                  },
+                  onPressed: () => _navigateToWorkoutDetail(workout),
                 ),
               ),
           ],
@@ -548,17 +547,16 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                   ),
                   const SizedBox(height: 10),
                   ..._favorites.map(
-                    (workout) => GestureDetector(
-                      onTap: () => _navigateToWorkoutDetail(workout),
-                      child: WorkoutRow(
-                        wObj: {
-                          'name': workout.name,
-                          'image': workout.displayImage,
-                          'kcal': workout.calories.toString(),
-                          'time': workout.duration.toString(),
-                          'progress': 0.0,
-                        },
-                      ),
+                    (workout) => WorkoutRow(
+                      wObj: {
+                        'name': workout.name,
+                        'image': workout.displayImage,
+                        'kcal': workout.calories.toString(),
+                        'time': workout.duration.toString(),
+                        'progress': 0.0,
+                        'id': workout.id,
+                      },
+                      onPressed: () => _navigateToWorkoutDetail(workout),
                     ),
                   ),
                 ],
@@ -617,17 +615,16 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                   ),
                   const SizedBox(height: 10),
                   ..._history.map(
-                    (workout) => GestureDetector(
-                      onTap: () => _navigateToWorkoutDetail(workout),
-                      child: WorkoutRow(
-                        wObj: {
-                          'name': workout.name,
-                          'image': workout.displayImage,
-                          'kcal': workout.calories.toString(),
-                          'time': workout.duration.toString(),
-                          'progress': 1.0, // Completed
-                        },
-                      ),
+                    (workout) => WorkoutRow(
+                      wObj: {
+                        'name': workout.name,
+                        'image': workout.displayImage,
+                        'kcal': workout.calories.toString(),
+                        'time': workout.duration.toString(),
+                        'progress': 1.0, // Completed
+                        'id': workout.id,
+                      },
+                      onPressed: () => _navigateToWorkoutDetail(workout),
                     ),
                   ),
                 ],

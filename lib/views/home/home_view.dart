@@ -17,7 +17,6 @@ import '../../widgets/exercises_row.dart';
 import '../../widgets/dashboard_card.dart';
 import '../../services/workout_service.dart';
 import '../../services/notification_service.dart';
-import '../../services/exercise_service.dart';
 import '../../screens/bmi_chart_screen.dart';
 import '../../utils/debug_helper.dart';
 

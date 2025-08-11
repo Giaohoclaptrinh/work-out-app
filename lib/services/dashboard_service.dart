@@ -4,12 +4,14 @@ import '../models/dashboard_data.dart';
 import '../models/exercise.dart';
 import '../models/meal.dart';
 import 'cache_service.dart';
+import 'calories_tracker_service.dart';
 import '../utils/debug_helper.dart';
 
 class DashboardService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final CacheService _cache = CacheService();
+  final CaloriesTrackerService _caloriesTracker = CaloriesTrackerService();
 
   /// Get comprehensive dashboard data with optimized caching
   Future<DashboardData> getDashboardData({bool forceRefresh = false}) async {
@@ -35,11 +37,13 @@ class DashboardService {
         Future.value(workoutHistory), // Use already fetched data
         _cache.getMealPlan(today),
         _getUserStats(user.uid, today),
+        _caloriesTracker.getTodayCaloriesBurned(), // Get accurate calories burned
       ]);
 
       final userProfile = futures[0] as Map<String, dynamic>;
       final todayMeal = futures[2] as MealPlan?;
       final userStats = futures[3] as Map<String, dynamic>;
+      final todayCaloriesBurned = futures[4] as int;
 
       // Calculate metrics
       final todaysWorkouts = workoutHistory
@@ -54,10 +58,8 @@ class DashboardService {
       );
 
       final caloriesConsumed = _getTotalCalories(todayMeal);
-      final caloriesBurned = todaysWorkouts.fold(
-        0,
-        (total, workout) => total + (workout.calories ?? 0),
-      );
+      // Use accurate calories burned from tracker service
+      final caloriesBurned = todayCaloriesBurned;
 
       return DashboardData(
         userId: user.uid,
