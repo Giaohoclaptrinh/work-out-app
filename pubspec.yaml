@@ -43,6 +43,10 @@ dependencies:
   cached_network_image: ^3.4.1
   shared_preferences: ^2.5.3
   smooth_page_indicator: ^1.2.1
+  
+  # Video player & URL launcher
+  youtube_player_iframe: ^5.1.2
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:

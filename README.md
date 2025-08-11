@@ -50,19 +50,21 @@ lib/
 ├── models/                      # Data models
 │   ├── exercise.dart           # Exercise model and sample data
 │   └── workout.dart            # Workout and WorkoutSet models
-└── views/                      # UI screens organized by feature
+├── screens/                    # UI screens (main app screens)
+│   ├── auth_screen.dart        # Authentication
+│   ├── workout_tracker_screen.dart  # Fitness tracking (used in main nav)
+│   ├── meal_planner_screen.dart     # Nutrition planning (used in main nav)
+│   ├── workout_list_screen.dart     # Workout list
+│   ├── workout_detail_screen.dart   # Workout details
+│   └── onboarding_screen.dart       # User onboarding
+└── views/                      # UI views organized by feature
     ├── main_tab/               # Bottom navigation
     │   └── main_tab_view.dart  # Main tab controller
     ├── home/                   # Dashboard
     │   └── home_view.dart      # Home screen with charts
-    ├── workout/                # Fitness tracking
-    │   └── workout_tracker_view.dart
-    ├── meal/                   # Nutrition planning
-    │   └── meal_planner_view.dart
-    ├── sleep/                  # Sleep monitoring
-    │   └── sleep_tracker_view.dart
-    └── profile/                # User management
-        └── profile_view.dart
+    ├── profile/                # User management
+    │   └── profile_view.dart   # Profile screen
+    └── body_data_input_screen.dart # Body data input
 ```
 
 ## 🎨 **UI/UX Design**
@@ -187,8 +189,4 @@ UpcomingWorkoutRow (hiển thị các bài tập sắp tới)
 LatestActivityRow (hiển thị hoạt động gần đây)
 PopularMealRow (nếu có phần gợi ý meal liên quan đến workout)
 NotificationRow (hiển thị thông báo liên quan đến workout)
-4. gym_visual_exercises_screen.dart
-ExercisesRow (hiển thị từng bài tập với hình ảnh và thông tin)
-ExercisesSetSection (hiển thị các set bài tập)
-StepDetailRow hoặc FoodStepDetailRow (nếu có phần hướng dẫn từng bước)
-TabButton (chuyển đổi giữa các nhóm cơ hoặc loại bài tập)
+4. Other screens use various widgets for their specific functionality

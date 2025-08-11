@@ -51,7 +51,7 @@ class DashboardCard extends StatelessWidget {
                     width: 28,
                     height: 28,
                     child: CircularProgressIndicator(
-                      value: progress,
+                      value: progress.clamp(0.0, 1.0),
                       strokeWidth: 2.5,
                       backgroundColor: color.withOpacity(0.2),
                       valueColor: AlwaysStoppedAnimation<Color>(color),

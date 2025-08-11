@@ -21,12 +21,27 @@ class WorkoutRow extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(30),
-            child: Image.asset(
-              wObj["image"]?.toString() ?? "assets/img/Workout1.png",
-              width: 60,
-              height: 60,
-              fit: BoxFit.cover,
-            ),
+            child: wObj["image"]?.toString().startsWith('http') == true
+                ? Image.network(
+                    wObj["image"]?.toString() ?? "assets/img/Workout1.png",
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Image.asset(
+                        "assets/img/Workout1.png",
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                      );
+                    },
+                  )
+                : Image.asset(
+                    wObj["image"]?.toString() ?? "assets/img/Workout1.png",
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                  ),
           ),
 
           const SizedBox(width: 15),
@@ -37,30 +52,40 @@ class WorkoutRow extends StatelessWidget {
                 Text(
                   wObj["name"]?.toString() ?? "Workout",
                   style: TextStyle(color: TColor.black, fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
 
                 Text(
                   "${wObj["kcal"]?.toString() ?? "0"} Calories Burn | ${wObj["time"]?.toString() ?? "0"} minutes",
                   style: TextStyle(color: TColor.gray, fontSize: 10),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
 
                 const SizedBox(height: 4),
 
-                SimpleAnimationProgressBar(
-                  height: 15,
-                  width: media.width * 0.5,
-                  backgroundColor: Colors.grey.shade100,
-                  foregroundColor: Colors.purple,
-                  ratio: wObj["progress"] as double? ?? 0.0,
-                  direction: Axis.horizontal,
-                  curve: Curves.fastLinearToSlowEaseIn,
-                  duration: const Duration(seconds: 3),
-                  borderRadius: BorderRadius.circular(7.5),
-                  gradientColor: LinearGradient(
-                    colors: TColor.primaryG,
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SimpleAnimationProgressBar(
+                      height: 15,
+                      width: constraints.maxWidth > 0
+                          ? constraints.maxWidth
+                          : media.width * 0.4,
+                      backgroundColor: Colors.grey.shade100,
+                      foregroundColor: Colors.purple,
+                      ratio: wObj["progress"] as double? ?? 0.0,
+                      direction: Axis.horizontal,
+                      curve: Curves.fastLinearToSlowEaseIn,
+                      duration: const Duration(seconds: 3),
+                      borderRadius: BorderRadius.circular(7.5),
+                      gradientColor: LinearGradient(
+                        colors: TColor.primaryG,
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

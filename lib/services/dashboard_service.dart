@@ -1,292 +1,254 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/workout.dart';
-import '../models/meal.dart';
 import '../models/dashboard_data.dart';
-import 'workout_service.dart';
-import 'meal_service.dart';
+import '../models/exercise.dart';
+import '../models/meal.dart';
+import 'cache_service.dart';
+import '../utils/debug_helper.dart';
 
 class DashboardService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final WorkoutService _workoutService = WorkoutService();
-  final MealService _mealService = MealService();
+  final CacheService _cache = CacheService();
 
-  // Get comprehensive dashboard data
-  Future<DashboardData> getDashboardData() async {
+  /// Get comprehensive dashboard data with optimized caching
+  Future<DashboardData> getDashboardData({bool forceRefresh = false}) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated');
+    }
+
     try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        throw Exception('User not authenticated');
+      final today = DateTime.now();
+
+      // Force refresh workout history if requested
+      List<Exercise> workoutHistory;
+      if (forceRefresh) {
+        workoutHistory = await _cache.forceRefreshWorkoutHistory();
+      } else {
+        workoutHistory = await _cache.getWorkoutHistory();
       }
 
-      // Get user profile data
-      final userData = await _getUserProfileData(user.uid);
+      // Parallel data fetching for better performance
+      final futures = await Future.wait([
+        _getUserProfile(user.uid),
+        Future.value(workoutHistory), // Use already fetched data
+        _cache.getMealPlan(today),
+        _getUserStats(user.uid, today),
+      ]);
 
-      // Get today's data
-      final today = DateTime.now();
-      final todayString = today.toIso8601String().split('T')[0];
+      final userProfile = futures[0] as Map<String, dynamic>;
+      final todayMeal = futures[2] as MealPlan?;
+      final userStats = futures[3] as Map<String, dynamic>;
 
-      // Get workout data
-      final workoutHistory = await _workoutService.getWorkoutHistory();
-      final todayWorkouts = workoutHistory.where((workout) {
-        final workoutDate = workout.completedAt;
-        return workoutDate != null &&
-            workoutDate.year == today.year &&
-            workoutDate.month == today.month &&
-            workoutDate.day == today.day;
-      }).toList();
+      // Calculate metrics
+      final todaysWorkouts = workoutHistory
+          .where(
+            (w) => w.completedAt != null && _isSameDay(w.completedAt!, today),
+          )
+          .toList();
 
-      // Get meal data
-      final todayMealPlan = await _mealService.getMealPlanForDate(today);
-
-      // Calculate totals
-      final totalCaloriesConsumed = _calculateTotalCaloriesConsumed(
-        todayMealPlan,
-      );
-      final totalCaloriesBurned = _calculateTotalCaloriesBurned(todayWorkouts);
-      final waterIntake = await _getWaterIntake(todayString);
-      final stepsTaken = await _getStepsTaken(todayString);
-      final sleepHours = await _getSleepHours(todayString);
-
-      // Calculate BMI
       final bmi = _calculateBMI(
-        userData['weight'] ?? 70,
-        userData['height'] ?? 170,
+        userProfile['weight'] ?? 70,
+        userProfile['height'] ?? 170,
       );
 
-      // Determine health status
-      final healthStatus = _determineHealthStatus(
-        bmi,
-        totalCaloriesConsumed,
-        totalCaloriesBurned,
+      final caloriesConsumed = _getTotalCalories(todayMeal);
+      final caloriesBurned = todaysWorkouts.fold(
+        0,
+        (total, workout) => total + (workout.calories ?? 0),
       );
 
       return DashboardData(
-        totalCaloriesConsumed: totalCaloriesConsumed,
-        totalCaloriesBurned: totalCaloriesBurned,
-        waterIntake: waterIntake,
-        stepsTaken: stepsTaken,
-        sleepHours: sleepHours,
-        workoutsCompleted: todayWorkouts.length,
-        mealsPlanned:
-            todayMealPlan?.meals.values.fold(
-              0,
-              (sum, meals) => (sum ?? 0) + (meals?.length ?? 0),
-            ) ??
-            0,
+        userId: user.uid,
+        userName: userProfile['displayName'] ?? 'User',
+        userEmail: userProfile['email'] ?? user.email ?? '',
         bmi: bmi,
-        healthStatus: healthStatus,
-        recentWorkouts: workoutHistory.take(5).toList(),
-        recentMealPlans: await _getRecentMealPlans(),
+        totalCaloriesConsumed: caloriesConsumed,
+        totalCaloriesBurned: caloriesBurned,
+        netCalories: caloriesConsumed - caloriesBurned,
+        waterIntake: (userStats['waterIntake'] ?? 0.0).toDouble(),
+        stepsTaken: userStats['stepsTaken'] ?? 0,
+        sleepHours: (userStats['sleepHours'] ?? 0.0).toDouble(),
+        healthStatus: _getHealthStatus(bmi, caloriesConsumed, caloriesBurned),
+        workoutsCompletedToday: todaysWorkouts.length,
+        totalWorkoutsCompleted: workoutHistory.length,
+        currentStreak: _calculateStreak(workoutHistory),
+        weeklyProgress: _getWeeklyProgress(workoutHistory),
+        lastUpdated: DateTime.now(),
       );
     } catch (e) {
-      print('Error getting dashboard data: $e');
-      // Return default data
-      return DashboardData(
-        totalCaloriesConsumed: 0,
-        totalCaloriesBurned: 0,
-        waterIntake: 0,
-        stepsTaken: 0,
-        sleepHours: 0,
-        workoutsCompleted: 0,
-        mealsPlanned: 0,
-        bmi: 0,
-        healthStatus: 'Unknown',
-        recentWorkouts: [],
-        recentMealPlans: [],
-      );
+      DebugHelper.logError('Dashboard data error: $e');
+      throw Exception('Failed to load dashboard data');
     }
   }
 
-  // Get user profile data
-  Future<Map<String, dynamic>> _getUserProfileData(String userId) async {
+  /// Setup real-time updates for dashboard
+  void setupRealTimeUpdates(Function() onDataChanged) {
+    _cache.setupRealTimeListeners((cacheKey) {
+      onDataChanged();
+    });
+  }
+
+  /// Stop real-time updates
+  void stopRealTimeUpdates() {
+    _cache.stopListeners();
+  }
+
+  /// Test cache invalidation
+  void testCacheInvalidation() {
+    _cache.testCacheInvalidation();
+  }
+
+  /// Force clear all cache
+  void forceClearAllCache() {
+    _cache.forceClearAllCache();
+  }
+
+  /// Get batch meal plans for date range
+  Future<Map<String, MealPlan?>> getMealPlansForWeek(DateTime startDate) async {
+    final dates = List.generate(
+      7,
+      (index) => startDate.add(Duration(days: index)),
+    );
+    return await _cache.getMealPlans(dates);
+  }
+
+  Future<Map<String, dynamic>> _getUserProfile(String userId) async {
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
       return doc.data() ?? {};
     } catch (e) {
-      print('Error getting user profile data: $e');
       return {};
     }
   }
 
-  // Calculate total calories consumed from meal plan
-  int _calculateTotalCaloriesConsumed(MealPlan? mealPlan) {
+  Future<Map<String, dynamic>> _getUserStats(
+    String userId,
+    DateTime date,
+  ) async {
+    try {
+      final dateStr = date.toIso8601String().split('T')[0];
+      final doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('dailyStats')
+          .doc(dateStr)
+          .get();
+
+      return doc.exists ? doc.data()! : _getDefaultStats();
+    } catch (e) {
+      return _getDefaultStats();
+    }
+  }
+
+  Map<String, dynamic> _getDefaultStats() {
+    return {'waterIntake': 0.0, 'stepsTaken': 0, 'sleepHours': 0.0};
+  }
+
+  double _calculateBMI(dynamic weight, dynamic height) {
+    try {
+      final w = (weight is num) ? weight.toDouble() : double.parse('$weight');
+      final h = (height is num) ? height.toDouble() : double.parse('$height');
+
+      if (h <= 0) return 0.0;
+
+      final heightM = h / 100;
+      return w / (heightM * heightM);
+    } catch (e) {
+      return 0.0;
+    }
+  }
+
+  int _getTotalCalories(MealPlan? mealPlan) {
     if (mealPlan == null) return 0;
 
     int total = 0;
-    mealPlan.meals.values.forEach((meals) {
-      total += meals.fold(0, (sum, meal) => sum + meal.calories);
-    });
+    for (final meals in mealPlan.meals.values) {
+      for (final meal in meals) {
+        total += meal.calories;
+      }
+    }
     return total;
   }
 
-  // Calculate total calories burned from workouts
-  int _calculateTotalCaloriesBurned(List<Workout> workouts) {
-    return workouts.fold(0, (sum, workout) => sum + workout.calories);
-  }
+  String _getHealthStatus(double bmi, int caloriesIn, int caloriesOut) {
+    final factors = <String>[];
 
-  // Get water intake for today
-  Future<int> _getWaterIntake(String date) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return 0;
-
-      final doc = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('waterIntake')
-          .doc(date)
-          .get();
-
-      return doc.data()?['amount'] ?? 0;
-    } catch (e) {
-      print('Error getting water intake: $e');
-      return 0;
+    if (bmi >= 18.5 && bmi < 25) factors.add('healthy_weight');
+    if ((caloriesIn - caloriesOut).abs() <= 500) {
+      factors.add('balanced_calories');
     }
+
+    return factors.length >= 2
+        ? 'Good'
+        : factors.length == 1
+        ? 'Fair'
+        : 'Needs Improvement';
   }
 
-  // Get steps taken for today
-  Future<int> _getStepsTaken(String date) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return 0;
+  int _calculateStreak(List<Exercise> history) {
+    if (history.isEmpty) return 0;
 
-      final doc = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('steps')
-          .doc(date)
-          .get();
+    final today = DateTime.now();
+    int streak = 0;
 
-      return doc.data()?['count'] ?? 0;
-    } catch (e) {
-      print('Error getting steps: $e');
-      return 0;
-    }
-  }
+    final sorted = history.where((w) => w.completedAt != null).toList()
+      ..sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
 
-  // Get sleep hours for today
-  Future<int> _getSleepHours(String date) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return 0;
+    DateTime? lastDate;
+    for (final workout in sorted) {
+      final workoutDate = workout.completedAt!;
 
-      final doc = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('sleep')
-          .doc(date)
-          .get();
-
-      return doc.data()?['hours'] ?? 0;
-    } catch (e) {
-      print('Error getting sleep hours: $e');
-      return 0;
-    }
-  }
-
-  // Calculate BMI
-  double _calculateBMI(double weight, double height) {
-    if (height <= 0) return 0;
-    final heightInMeters = height / 100;
-    return weight / (heightInMeters * heightInMeters);
-  }
-
-  // Determine health status
-  String _determineHealthStatus(
-    double bmi,
-    int caloriesConsumed,
-    int caloriesBurned,
-  ) {
-    if (bmi < 18.5) return 'Underweight';
-    if (bmi >= 18.5 && bmi < 25) return 'Normal';
-    if (bmi >= 25 && bmi < 30) return 'Overweight';
-    if (bmi >= 30) return 'Obese';
-
-    // Additional factors
-    if (caloriesConsumed > caloriesBurned + 500) return 'Need Exercise';
-    if (caloriesConsumed < caloriesBurned - 500) return 'Need Nutrition';
-
-    return 'Good';
-  }
-
-  // Get recent meal plans
-  Future<List<MealPlan>> _getRecentMealPlans() async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return [];
-
-      final today = DateTime.now();
-      final List<MealPlan> recentPlans = [];
-
-      // Get meal plans for the last 7 days
-      for (int i = 0; i < 7; i++) {
-        final date = today.subtract(Duration(days: i));
-        final mealPlan = await _mealService.getMealPlanForDate(date);
-        if (mealPlan != null) {
-          recentPlans.add(mealPlan);
+      if (lastDate == null) {
+        if (_isSameDay(workoutDate, today) ||
+            _isSameDay(workoutDate, today.subtract(Duration(days: 1)))) {
+          streak = 1;
+          lastDate = workoutDate;
+        } else {
+          break;
+        }
+      } else {
+        final expected = lastDate.subtract(Duration(days: 1));
+        if (_isSameDay(workoutDate, expected)) {
+          streak++;
+          lastDate = workoutDate;
+        } else if (!_isSameDay(workoutDate, lastDate)) {
+          break;
         }
       }
-
-      return recentPlans;
-    } catch (e) {
-      print('Error getting recent meal plans: $e');
-      return [];
     }
+
+    return streak;
   }
 
-  // Update water intake
-  Future<void> updateWaterIntake(int amount) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return;
+  Map<String, dynamic> _getWeeklyProgress(List<Exercise> history) {
+    final today = DateTime.now();
+    final weekStart = today.subtract(Duration(days: today.weekday - 1));
 
-      final today = DateTime.now().toIso8601String().split('T')[0];
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('waterIntake')
-          .doc(today)
-          .set({'amount': amount, 'updatedAt': FieldValue.serverTimestamp()});
-    } catch (e) {
-      print('Error updating water intake: $e');
-    }
+    final thisWeek = history
+        .where(
+          (w) => w.completedAt != null && w.completedAt!.isAfter(weekStart),
+        )
+        .toList();
+
+    return {
+      'workouts': thisWeek.length,
+      'calories': thisWeek.fold(0, (total, w) => total + (w.calories ?? 0)),
+      'goal': 5,
+      'progress': (thisWeek.length / 5.0).clamp(0.0, 1.0),
+    };
   }
 
-  // Update steps
-  Future<void> updateSteps(int count) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return;
-
-      final today = DateTime.now().toIso8601String().split('T')[0];
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('steps')
-          .doc(today)
-          .set({'count': count, 'updatedAt': FieldValue.serverTimestamp()});
-    } catch (e) {
-      print('Error updating steps: $e');
-    }
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
 
-  // Update sleep hours
-  Future<void> updateSleepHours(int hours) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return;
+  /// Clear cache for fresh data
+  void clearCache() => _cache.clearCache();
 
-      final today = DateTime.now().toIso8601String().split('T')[0];
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('sleep')
-          .doc(today)
-          .set({'hours': hours, 'updatedAt': FieldValue.serverTimestamp()});
-    } catch (e) {
-      print('Error updating sleep hours: $e');
-    }
-  }
+  /// Get cache statistics
+  Map<String, dynamic> getCacheStats() => _cache.getCacheStats();
 }
