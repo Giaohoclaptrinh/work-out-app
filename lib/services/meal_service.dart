@@ -278,9 +278,9 @@ class MealService {
   // Tính tổng calories
   int _calculateTotalCalories(Map<String, List<Meal>> meals) {
     int total = 0;
-    meals.values.forEach((mealList) {
+    for (var mealList in meals.values) {
       total += mealList.fold(0, (sum, meal) => sum + meal.calories);
-    });
+    }
     return total;
   }
 

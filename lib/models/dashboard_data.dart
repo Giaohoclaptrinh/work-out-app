@@ -1,5 +1,3 @@
-import '../models/workout.dart';
-import '../models/meal.dart';
 
 class DashboardData {
   final String userId;

@@ -316,7 +316,7 @@ class WorkoutService {
       final snapshot = await _firestore
           .collection('workouts')
           .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThan: query + '\uf8ff')
+          .where('name', isLessThan: '$query\uf8ff')
           .get();
 
       return snapshot.docs.map((doc) {
