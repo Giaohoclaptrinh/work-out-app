@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../common/color_extension.dart';
-import '../widgets/round_button.dart';
+import '../services/daily_stats_service.dart';
+import '../utils/debug_helper.dart';
 
 class BMIChartScreen extends StatefulWidget {
   const BMIChartScreen({super.key});
@@ -13,554 +12,530 @@ class BMIChartScreen extends StatefulWidget {
 }
 
 class _BMIChartScreenState extends State<BMIChartScreen> {
-  int touchedIndex = -1;
-  double? userBMI;
-  double? userWeight;
-  double? userHeight;
-  bool isLoading = true;
-
-  // Sample BMI history data (could be from database)
-  final List<BMIHistoryPoint> bmiHistory = [
-    BMIHistoryPoint(DateTime(2024, 1, 1), 24.2),
-    BMIHistoryPoint(DateTime(2024, 2, 1), 23.8),
-    BMIHistoryPoint(DateTime(2024, 3, 1), 23.5),
-    BMIHistoryPoint(DateTime(2024, 4, 1), 23.2),
-    BMIHistoryPoint(DateTime(2024, 5, 1), 22.9),
-    BMIHistoryPoint(DateTime(2024, 6, 1), 22.6),
-  ];
+  final DailyStatsService _dailyStatsService = DailyStatsService();
+  Map<String, dynamic>? _bmiProgress;
+  List<Map<String, dynamic>> _weeklyStats = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    _loadData();
   }
 
-  Future<void> _loadUserData() async {
+  Future<void> _loadData() async {
     try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) return;
+      setState(() => _isLoading = true);
 
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
+      final futures = await Future.wait([
+        _dailyStatsService.getBMIProgress(),
+        _dailyStatsService.getWeeklyStats(),
+      ]);
 
-      if (doc.exists && mounted) {
-        final data = doc.data()!;
-        setState(() {
-          userWeight = data['weight']?.toDouble() ?? 70.0;
-          userHeight = data['height']?.toDouble() ?? 175.0;
-          _calculateCurrentBMI();
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Error loading user data: $e');
       setState(() {
-        userWeight = 70.0; // Default values
-        userHeight = 175.0;
-        _calculateCurrentBMI();
-        isLoading = false;
+        _bmiProgress = futures[0] as Map<String, dynamic>?;
+        _weeklyStats = futures[1] as List<Map<String, dynamic>>;
+        _isLoading = false;
       });
+    } catch (e) {
+      DebugHelper.logError('Error loading BMI chart data: $e');
+      setState(() => _isLoading = false);
     }
-  }
-
-  void _calculateCurrentBMI() {
-    if (userHeight != null && userHeight! > 0 && userWeight != null) {
-      final heightInMeters = userHeight! / 100;
-      userBMI = userWeight! / (heightInMeters * heightInMeters);
-    }
-  }
-
-  String _getBMICategory(double bmi) {
-    if (bmi < 18.5) return 'Underweight';
-    if (bmi >= 18.5 && bmi < 25) return 'Normal';
-    if (bmi >= 25 && bmi < 30) return 'Overweight';
-    return 'Obese';
-  }
-
-  Color _getBMIColor(double bmi) {
-    if (bmi < 18.5) return Colors.blue;
-    if (bmi >= 18.5 && bmi < 25) return Colors.green;
-    if (bmi >= 25 && bmi < 30) return Colors.orange;
-    return Colors.red;
-  }
-
-  List<PieChartSectionData> _getBMIDistributionData() {
-    return [
-      PieChartSectionData(
-        color: Colors.blue,
-        value: 18.5,
-        title: 'Underweight\n< 18.5',
-        radius: touchedIndex == 0 ? 110 : 100,
-        titleStyle: TextStyle(
-          fontSize: touchedIndex == 0 ? 14 : 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-      PieChartSectionData(
-        color: Colors.green,
-        value: 6.5, // 25 - 18.5
-        title: 'Normal\n18.5-25',
-        radius: touchedIndex == 1 ? 110 : 100,
-        titleStyle: TextStyle(
-          fontSize: touchedIndex == 1 ? 14 : 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-      PieChartSectionData(
-        color: Colors.orange,
-        value: 5, // 30 - 25
-        title: 'Overweight\n25-30',
-        radius: touchedIndex == 2 ? 110 : 100,
-        titleStyle: TextStyle(
-          fontSize: touchedIndex == 2 ? 14 : 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-      PieChartSectionData(
-        color: Colors.red,
-        value: 10, // 40 - 30 (extended range)
-        title: 'Obese\n> 30',
-        radius: touchedIndex == 3 ? 110 : 100,
-        titleStyle: TextStyle(
-          fontSize: touchedIndex == 3 ? 14 : 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-    ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: TColor.white,
       appBar: AppBar(
-        backgroundColor: TColor.white,
-        centerTitle: true,
-        elevation: 0,
-        leading: InkWell(
-          onTap: () => Navigator.pop(context),
-          child: Container(
-            margin: const EdgeInsets.all(8),
-            height: 40,
-            width: 40,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: TColor.lightGray,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Image.asset(
-              "assets/img/ArrowLeft.png",
-              width: 15,
-              height: 15,
-              fit: BoxFit.contain,
-            ),
-          ),
-        ),
-        title: Text(
-          "BMI Analysis",
-          style: TextStyle(
-            color: TColor.black,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        title: const Text('BMI Progress'),
+        backgroundColor: TColor.primaryColor1,
+        foregroundColor: Colors.white,
         actions: [
-          InkWell(
-            onTap: () {
-              // TODO: Open BMI calculator
-            },
-            child: Container(
-              margin: const EdgeInsets.all(8),
-              height: 40,
-              width: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: TColor.lightGray,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.calculate, color: TColor.black, size: 20),
-            ),
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
         ],
       ),
-      body: isLoading
-          ? Center(
-              child: CircularProgressIndicator(color: TColor.primaryColor1),
-            )
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 15),
-
-                    // Current BMI Card
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: userBMI != null
-                              ? [
-                                  _getBMIColor(userBMI!),
-                                  _getBMIColor(userBMI!).withOpacity(0.7),
-                                ]
-                              : TColor.primaryG,
-                        ),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            "Your Current BMI",
-                            style: TextStyle(
-                              color: TColor.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            userBMI?.toStringAsFixed(1) ?? "0.0",
-                            style: TextStyle(
-                              color: TColor.white,
-                              fontSize: 48,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            userBMI != null
-                                ? _getBMICategory(userBMI!)
-                                : "Calculate BMI",
-                            style: TextStyle(
-                              color: TColor.white.withOpacity(0.9),
-                              fontSize: 18,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 15),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _buildBMIDetail(
-                                "Weight",
-                                "${userWeight?.toStringAsFixed(1) ?? '0.0'} kg",
-                              ),
-                              Container(
-                                width: 1,
-                                height: 30,
-                                color: TColor.white.withOpacity(0.3),
-                              ),
-                              _buildBMIDetail(
-                                "Height",
-                                "${userHeight?.toStringAsFixed(0) ?? '0'} cm",
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 25),
-
-                    // BMI Categories Chart
-                    Text(
-                      "BMI Categories",
-                      style: TextStyle(
-                        color: TColor.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-
-                    Container(
-                      height: 250,
-                      padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: TColor.white,
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 5,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: PieChart(
-                        PieChartData(
-                          pieTouchData: PieTouchData(
-                            touchCallback:
-                                (FlTouchEvent event, pieTouchResponse) {
-                                  setState(() {
-                                    if (!event.isInterestedForInteractions ||
-                                        pieTouchResponse == null ||
-                                        pieTouchResponse.touchedSection ==
-                                            null) {
-                                      touchedIndex = -1;
-                                      return;
-                                    }
-                                    touchedIndex = pieTouchResponse
-                                        .touchedSection!
-                                        .touchedSectionIndex;
-                                  });
-                                },
-                          ),
-                          borderData: FlBorderData(show: false),
-                          sectionsSpace: 2,
-                          centerSpaceRadius: 40,
-                          sections: _getBMIDistributionData(),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 25),
-
-                    // BMI Progress Chart
-                    Text(
-                      "BMI Progress",
-                      style: TextStyle(
-                        color: TColor.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-
-                    Container(
-                      height: 200,
-                      padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: TColor.white,
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 5,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: LineChart(
-                        LineChartData(
-                          gridData: FlGridData(
-                            show: true,
-                            drawVerticalLine: false,
-                            horizontalInterval: 1,
-                            getDrawingHorizontalLine: (value) {
-                              return FlLine(
-                                color: TColor.lightGray,
-                                strokeWidth: 1,
-                              );
-                            },
-                          ),
-                          titlesData: FlTitlesData(
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 35,
-                                getTitlesWidget: (value, meta) {
-                                  return Text(
-                                    value.toInt().toString(),
-                                    style: TextStyle(
-                                      color: TColor.gray,
-                                      fontSize: 12,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 30,
-                                getTitlesWidget: (value, meta) {
-                                  final months = [
-                                    'Jan',
-                                    'Feb',
-                                    'Mar',
-                                    'Apr',
-                                    'May',
-                                    'Jun',
-                                  ];
-                                  final index = value.toInt();
-                                  if (index >= 0 && index < months.length) {
-                                    return Text(
-                                      months[index],
-                                      style: TextStyle(
-                                        color: TColor.gray,
-                                        fontSize: 12,
-                                      ),
-                                    );
-                                  }
-                                  return const Text('');
-                                },
-                              ),
-                            ),
-                            rightTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                            topTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                          ),
-                          borderData: FlBorderData(show: false),
-                          minX: 0,
-                          maxX: 5,
-                          minY: 20,
-                          maxY: 26,
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: bmiHistory.asMap().entries.map((entry) {
-                                return FlSpot(
-                                  entry.key.toDouble(),
-                                  entry.value.bmi,
-                                );
-                              }).toList(),
-                              isCurved: true,
-                              gradient: LinearGradient(colors: TColor.primaryG),
-                              barWidth: 3,
-                              isStrokeCapRound: true,
-                              dotData: FlDotData(
-                                show: true,
-                                getDotPainter: (spot, percent, barData, index) {
-                                  return FlDotCirclePainter(
-                                    radius: 4,
-                                    color: TColor.primaryColor1,
-                                    strokeWidth: 2,
-                                    strokeColor: TColor.white,
-                                  );
-                                },
-                              ),
-                              belowBarData: BarAreaData(
-                                show: true,
-                                gradient: LinearGradient(
-                                  colors: TColor.primaryG
-                                      .map((color) => color.withOpacity(0.1))
-                                      .toList(),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 25),
-
-                    // BMI Tips
-                    Text(
-                      "Health Tips",
-                      style: TextStyle(
-                        color: TColor.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-
-                    ...(_getBMITips()).map((tip) => _buildTipCard(tip)),
-
-                    const SizedBox(height: 25),
-
-                    // Action Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: RoundButton(
-                            title: "Update BMI",
-                            onPressed: () {
-                              // TODO: Navigate to BMI input screen
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: RoundButton(
-                            title: "Set Goal",
-                            type: RoundButtonType.bgGradient,
-                            onPressed: () {
-                              // TODO: Navigate to goal setting
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 30),
-                  ],
-                ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildBMICard(),
+                  const SizedBox(height: 20),
+                  _buildChartSection(),
+                  const SizedBox(height: 20),
+                  _buildWeeklyStatsSection(),
+                  const SizedBox(height: 20),
+                  _buildLogTodayButton(),
+                ],
               ),
             ),
     );
   }
 
-  Widget _buildBMIDetail(String label, String value) {
-    return Column(
+  Widget _buildBMICard() {
+    final latestBMI = _getLatestBMI();
+    final bmiStatus = _getBMIStatus(latestBMI);
+    final bmiColor = _getBMIColor(latestBMI);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [bmiColor, bmiColor.withValues(alpha: 0.8)],
+        ),
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: bmiColor.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Current BMI',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      latestBMI != null ? latestBMI.toStringAsFixed(1) : 'N/A',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      bmiStatus,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _getBMIIcon(latestBMI),
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildBMICategoryBar(latestBMI),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBMICategoryBar(double? bmi) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          _buildCategoryItem('Underweight', 18.5, Colors.blue, bmi),
+          _buildCategoryItem('Normal', 25.0, Colors.green, bmi),
+          _buildCategoryItem('Overweight', 30.0, Colors.orange, bmi),
+          _buildCategoryItem('Obese', 40.0, Colors.red, bmi),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryItem(String label, double threshold, Color color, double? currentBMI) {
+    final isCurrent = currentBMI != null && 
+        ((threshold == 18.5 && currentBMI < 18.5) ||
+         (threshold == 25.0 && currentBMI >= 18.5 && currentBMI < 25.0) ||
+         (threshold == 30.0 && currentBMI >= 25.0 && currentBMI < 30.0) ||
+         (threshold == 40.0 && currentBMI >= 30.0));
+
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        decoration: BoxDecoration(
+          color: isCurrent ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: isCurrent ? color : Colors.white.withValues(alpha: 0.8),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '< ${threshold.toStringAsFixed(1)}',
+              style: TextStyle(
+                fontSize: 8,
+                color: isCurrent ? color : Colors.white.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChartSection() {
+    final chartData = _getChartData();
+    
+    if (chartData.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: Colors.grey.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.show_chart,
+              size: 48,
+              color: Colors.grey.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No BMI data available',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Complete workouts and log your weight to see BMI progress',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.trending_up,
+                color: TColor.primaryColor1,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'BMI Progress (Last 7 Days)',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: TColor.black,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 250,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: 2,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: Colors.grey.withValues(alpha: 0.2),
+                      strokeWidth: 1,
+                    );
+                  },
+                ),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 50,
+                      interval: 2,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          value.toInt().toString(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.withValues(alpha: 0.7),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 35,
+                      getTitlesWidget: (value, meta) {
+                        if (value.toInt() < chartData.length) {
+                          final date = chartData[value.toInt()]['date'];
+                          final dateParts = date.split('-');
+                          return Text(
+                            '${dateParts[1]}/${dateParts[2]}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.withValues(alpha: 0.7),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
+                    left: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
+                  ),
+                ),
+                minY: 15,
+                maxY: 35,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: chartData.asMap().entries.map((entry) {
+                      return FlSpot(entry.key.toDouble(), entry.value['bmi']);
+                    }).toList(),
+                    isCurved: true,
+                    gradient: LinearGradient(
+                      colors: [
+                        TColor.primaryColor1,
+                        TColor.primaryColor2,
+                      ],
+                    ),
+                    barWidth: 4,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) {
+                        return FlDotCirclePainter(
+                          radius: 6,
+                          color: TColor.primaryColor1,
+                          strokeWidth: 3,
+                          strokeColor: Colors.white,
+                        );
+                      },
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          TColor.primaryColor1.withValues(alpha: 0.3),
+                          TColor.primaryColor2.withValues(alpha: 0.1),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildBMIRangeLegend(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBMIRangeLegend() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            color: TColor.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+        _buildLegendItem('Underweight', '< 18.5', Colors.blue),
+        _buildLegendItem('Normal', '18.5-25', Colors.green),
+        _buildLegendItem('Overweight', '25-30', Colors.orange),
+        _buildLegendItem('Obese', '> 30', Colors.red),
+      ],
+    );
+  }
+
+  Widget _buildLegendItem(String label, String range, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
           ),
         ),
-        Text(
-          label,
-          style: TextStyle(color: TColor.white.withOpacity(0.7), fontSize: 12),
+        const SizedBox(width: 4),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: TColor.black,
+              ),
+            ),
+            Text(
+              range,
+              style: TextStyle(
+                fontSize: 8,
+                color: Colors.grey.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildTipCard(BMITip tip) {
+  Widget _buildWeeklyStatsSection() {
+    if (_weeklyStats.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Weekly Summary',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: TColor.black,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ..._weeklyStats.map((stat) => _buildStatRow(stat)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatRow(Map<String, dynamic> stat) {
+    final date = stat['date'] ?? '';
+    final bmi = stat['bmi'];
+    final weight = stat['weight_kg'];
+    final netCalories = stat['net_calories_kcal'] ?? 0;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: tip.color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: tip.color.withOpacity(0.3)),
+        color: Colors.grey.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: tip.color,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(tip.icon, color: TColor.white, size: 20),
-          ),
-          const SizedBox(width: 15),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tip.title,
-                  style: TextStyle(
-                    color: TColor.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  tip.description,
-                  style: TextStyle(color: TColor.gray, fontSize: 12),
-                ),
-              ],
+            flex: 2,
+            child: Text(
+              date,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: TColor.black,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              bmi != null ? bmi.toStringAsFixed(1) : 'N/A',
+              style: TextStyle(
+                fontSize: 14,
+                color: TColor.primaryColor1,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              weight != null ? '${weight.toStringAsFixed(1)}kg' : 'N/A',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.withValues(alpha: 0.8),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              '$netCalories kcal',
+              style: TextStyle(
+                fontSize: 12,
+                color: netCalories < 0 ? Colors.green : Colors.orange,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -568,90 +543,100 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
     );
   }
 
-  List<BMITip> _getBMITips() {
-    if (userBMI == null) return [];
+  Widget _buildLogTodayButton() {
+    return Container(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _logTodayStats,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: TColor.primaryColor1,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: const Text(
+          'Log Today\'s Stats',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
 
-    if (userBMI! < 18.5) {
-      return [
-        BMITip(
-          icon: Icons.restaurant,
-          title: "Increase Caloric Intake",
-          description: "Focus on nutrient-dense, high-calorie foods",
-          color: Colors.blue,
+  double? _getLatestBMI() {
+    if (_bmiProgress != null && _bmiProgress!['series'] != null) {
+      final points = _bmiProgress!['series']['bmi']['points'] as List?;
+      if (points != null && points.isNotEmpty) {
+        final latestPoint = points.last;
+        return (latestPoint['y_bmi'] as num?)?.toDouble();
+      }
+    }
+    return null;
+  }
+
+  String _getBMIStatus(double? bmi) {
+    if (bmi == null) return 'Unknown';
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25) return 'Normal';
+    if (bmi < 30) return 'Overweight';
+    return 'Obese';
+  }
+
+  IconData _getBMIIcon(double? bmi) {
+    if (bmi == null) return Icons.help_outline;
+    if (bmi < 18.5) return Icons.trending_down;
+    if (bmi < 25) return Icons.check_circle;
+    if (bmi < 30) return Icons.trending_up;
+    return Icons.warning;
+  }
+
+  Color _getBMIColor(double? bmi) {
+    if (bmi == null) return TColor.primaryColor1;
+    if (bmi < 18.5) return Colors.blue;
+    if (bmi < 25) return Colors.green;
+    if (bmi < 30) return Colors.orange;
+    return Colors.red;
+  }
+
+  List<Map<String, dynamic>> _getChartData() {
+    if (_bmiProgress != null && _bmiProgress!['series'] != null) {
+      final points = _bmiProgress!['series']['bmi']['points'] as List?;
+      if (points != null) {
+        return points.map((point) {
+          return {
+            'date': point['x_date'] ?? '',
+            'bmi': (point['y_bmi'] as num?)?.toDouble() ?? 0.0,
+          };
+        }).toList();
+      }
+    }
+    return [];
+  }
+
+  Future<void> _logTodayStats() async {
+    try {
+      await _dailyStatsService.autoLogTodayStats();
+
+      // Reload data
+      await _loadData();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Today\'s stats logged successfully!'),
+          backgroundColor: Colors.green,
         ),
-        BMITip(
-          icon: Icons.fitness_center,
-          title: "Strength Training",
-          description: "Build muscle mass with resistance exercises",
-          color: Colors.green,
-        ),
-      ];
-    } else if (userBMI! >= 18.5 && userBMI! < 25) {
-      return [
-        BMITip(
-          icon: Icons.favorite,
-          title: "Maintain Your Weight",
-          description: "Great job! Keep up your healthy lifestyle",
-          color: Colors.green,
-        ),
-        BMITip(
-          icon: Icons.directions_run,
-          title: "Stay Active",
-          description: "Continue regular exercise for optimal health",
-          color: Colors.blue,
-        ),
-      ];
-    } else if (userBMI! >= 25 && userBMI! < 30) {
-      return [
-        BMITip(
-          icon: Icons.scale,
-          title: "Gradual Weight Loss",
-          description: "Aim for 1-2 pounds per week weight loss",
-          color: Colors.orange,
-        ),
-        BMITip(
-          icon: Icons.local_dining,
-          title: "Balanced Diet",
-          description: "Focus on portion control and nutritious foods",
-          color: Colors.green,
-        ),
-      ];
-    } else {
-      return [
-        BMITip(
-          icon: Icons.medical_services,
-          title: "Consult Healthcare Provider",
-          description: "Consider professional guidance for weight management",
-          color: Colors.red,
-        ),
-        BMITip(
-          icon: Icons.trending_down,
-          title: "Structured Weight Loss",
-          description: "Combine diet modifications with regular exercise",
-          color: Colors.purple,
-        ),
-      ];
+      );
+    } catch (e) {
+      DebugHelper.logError('Error logging today stats: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
     }
   }
-}
-
-class BMIHistoryPoint {
-  final DateTime date;
-  final double bmi;
-
-  BMIHistoryPoint(this.date, this.bmi);
-}
-
-class BMITip {
-  final IconData icon;
-  final String title;
-  final String description;
-  final Color color;
-
-  BMITip({
-    required this.icon,
-    required this.title,
-    required this.description,
-    required this.color,
-  });
 }
