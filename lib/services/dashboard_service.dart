@@ -5,10 +5,15 @@ import '../models/exercise.dart';
 import '../models/meal.dart';
 import 'cache_service.dart';
 import '../utils/debug_helper.dart';
+import '../models/exercise.dart';
+import '../models/meal.dart';
+import 'cache_service.dart';
+import '../utils/debug_helper.dart';
 
 class DashboardService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final CacheService _cache = CacheService();
   final CacheService _cache = CacheService();
 
   /// Get comprehensive dashboard data with optimized caching
@@ -18,6 +23,7 @@ class DashboardService {
       throw Exception('User not authenticated');
     }
 
+    try {
     try {
       final today = DateTime.now();
 
@@ -48,11 +54,24 @@ class DashboardService {
           )
           .toList();
 
+      // Calculate metrics
+      final todaysWorkouts = workoutHistory
+          .where(
+            (w) => w.completedAt != null && _isSameDay(w.completedAt!, today),
+          )
+          .toList();
+
       final bmi = _calculateBMI(
+        userProfile['weight'] ?? 70,
+        userProfile['height'] ?? 170,
         userProfile['weight'] ?? 70,
         userProfile['height'] ?? 170,
       );
 
+      final caloriesConsumed = _getTotalCalories(todayMeal);
+      final caloriesBurned = todaysWorkouts.fold(
+        0,
+        (total, workout) => total + (workout.calories ?? 0),
       final caloriesConsumed = _getTotalCalories(todayMeal);
       final caloriesBurned = todaysWorkouts.fold(
         0,
@@ -63,7 +82,22 @@ class DashboardService {
         userId: user.uid,
         userName: userProfile['displayName'] ?? 'User',
         userEmail: userProfile['email'] ?? user.email ?? '',
+        userId: user.uid,
+        userName: userProfile['displayName'] ?? 'User',
+        userEmail: userProfile['email'] ?? user.email ?? '',
         bmi: bmi,
+        totalCaloriesConsumed: caloriesConsumed,
+        totalCaloriesBurned: caloriesBurned,
+        netCalories: caloriesConsumed - caloriesBurned,
+        waterIntake: (userStats['waterIntake'] ?? 0.0).toDouble(),
+        stepsTaken: userStats['stepsTaken'] ?? 0,
+        sleepHours: (userStats['sleepHours'] ?? 0.0).toDouble(),
+        healthStatus: _getHealthStatus(bmi, caloriesConsumed, caloriesBurned),
+        workoutsCompletedToday: todaysWorkouts.length,
+        totalWorkoutsCompleted: workoutHistory.length,
+        currentStreak: _calculateStreak(workoutHistory),
+        weeklyProgress: _getWeeklyProgress(workoutHistory),
+        lastUpdated: DateTime.now(),
         totalCaloriesConsumed: caloriesConsumed,
         totalCaloriesBurned: caloriesBurned,
         netCalories: caloriesConsumed - caloriesBurned,
@@ -127,26 +161,35 @@ class DashboardService {
     String userId,
     DateTime date,
   ) async {
+  Future<Map<String, dynamic>> getUserStats(
+    String userId,
+    DateTime date,
+  ) async {
     try {
+      final dateStr = date.toIso8601String().split('T')[0];
       final dateStr = date.toIso8601String().split('T')[0];
       final doc = await _firestore
           .collection('users')
           .doc(userId)
           .collection('dailyStats')
           .doc(dateStr)
+          .doc(userId)
+          .collection('dailyStats')
+          .doc(dateStr)
           .get();
 
-      return doc.exists ? doc.data()! : _getDefaultStats();
+      return doc.exists ? doc.data()! : getDefaultStats();
+      return doc.exists ? doc.data()! : getDefaultStats();
     } catch (e) {
-      return _getDefaultStats();
+      return getDefaultStats();
     }
   }
 
-  Map<String, dynamic> _getDefaultStats() {
+  Map<String, dynamic> getDefaultStats() {
     return {'waterIntake': 0.0, 'stepsTaken': 0, 'sleepHours': 0.0};
   }
 
-  double _calculateBMI(dynamic weight, dynamic height) {
+  double calculateBMI(dynamic weight, dynamic height) {
     try {
       final w = (weight is num) ? weight.toDouble() : double.parse('$weight');
       final h = (height is num) ? height.toDouble() : double.parse('$height');
@@ -160,7 +203,7 @@ class DashboardService {
     }
   }
 
-  int _getTotalCalories(MealPlan? mealPlan) {
+  int getTotalCalories(MealPlan? mealPlan) {
     if (mealPlan == null) return 0;
 
     int total = 0;
@@ -172,7 +215,7 @@ class DashboardService {
     return total;
   }
 
-  String _getHealthStatus(double bmi, int caloriesIn, int caloriesOut) {
+  String getHealthStatus(double bmi, int caloriesIn, int caloriesOut) {
     final factors = <String>[];
 
     if (bmi >= 18.5 && bmi < 25) factors.add('healthy_weight');
@@ -187,7 +230,7 @@ class DashboardService {
         : 'Needs Improvement';
   }
 
-  int _calculateStreak(List<Exercise> history) {
+  int calculateStreak(List<Exercise> history) {
     if (history.isEmpty) return 0;
 
     final today = DateTime.now();
@@ -201,8 +244,8 @@ class DashboardService {
       final workoutDate = workout.completedAt!;
 
       if (lastDate == null) {
-        if (_isSameDay(workoutDate, today) ||
-            _isSameDay(workoutDate, today.subtract(Duration(days: 1)))) {
+        if (isSameDay(workoutDate, today) ||
+            isSameDay(workoutDate, today.subtract(Duration(days: 1)))) {
           streak = 1;
           lastDate = workoutDate;
         } else {
@@ -210,10 +253,71 @@ class DashboardService {
         }
       } else {
         final expected = lastDate.subtract(Duration(days: 1));
-        if (_isSameDay(workoutDate, expected)) {
+        if (isSameDay(workoutDate, expected)) {
           streak++;
           lastDate = workoutDate;
-        } else if (!_isSameDay(workoutDate, lastDate)) {
+        } else if (!isSameDay(workoutDate, lastDate)) {
+          break;
+        }
+      }
+    }
+
+    return streak;
+  }
+
+  Map<String, dynamic> getWeeklyProgress(List<Exercise> history) {
+    final today = DateTime.now();
+    final weekStart = today.subtract(Duration(days: today.weekday - 1));
+
+    final thisWeek = history
+        .where(
+          (w) => w.completedAt != null && w.completedAt!.isAfter(weekStart),
+        )
+        .toList();
+
+    return {
+      'workouts': thisWeek.length,
+      'calories': thisWeek.fold(0, (total, w) => total + (w.calories ?? 0)),
+      'goal': 5,
+      'progress': (thisWeek.length / 5.0).clamp(0.0, 1.0),
+    };
+  }
+
+  bool isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  /// Clear cache for fresh data
+  void clearCache() => _cache.clearCache();
+
+  /// Get cache statistics
+  Map<String, dynamic> getCacheStats() => _cache.getCacheStats();
+    final today = DateTime.now();
+    int streak = 0;
+
+    final sorted = history.where((w) => w.completedAt != null).toList()
+      ..sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
+
+    DateTime? lastDate;
+    for (final workout in sorted) {
+      final workoutDate = workout.completedAt!;
+
+      if (lastDate == null) {
+        if (isSameDay(workoutDate, today) ||
+            isSameDay(workoutDate, today.subtract(Duration(days: 1)))) {
+          streak = 1;
+          lastDate = workoutDate;
+        } else {
+          break;
+        }
+      } else {
+        final expected = lastDate.subtract(Duration(days: 1));
+        if (isSameDay(workoutDate, expected)) {
+          streak++;
+          lastDate = workoutDate;
+        } else if (!isSameDay(workoutDate, lastDate)) {
           break;
         }
       }
