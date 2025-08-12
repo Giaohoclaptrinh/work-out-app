@@ -8,6 +8,7 @@ import '../../screens/meal_planner_screen.dart';
 import '../profile/profile_view.dart';
 import '../../services/exercise_service.dart';
 import '../../models/exercise.dart';
+import '../../models/workout.dart' as workout_model;
 import '../../screens/workout_detail_screen.dart';
 
 class MainTabView extends StatefulWidget {
@@ -174,10 +175,25 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
     });
 
     try {
-      // Get all exercises and filter locally for better performance
-      final allExercises = await _exerciseService.getAllExercises();
+      // Fetch workouts, user's custom workouts, and exercises in parallel
+      final fetched = await Future.wait<List<Exercise>>([
+        _exerciseService.getAllWorkouts(),
+        _exerciseService.getUserCustomWorkouts(),
+        // drop exercises for perf if not needed frequently; re-enable if required
+        // _exerciseService.getAllExercises(),
+      ]);
 
-      final results = allExercises.where((exercise) {
+      // Merge and de-duplicate by id
+      final Map<String, Exercise> idToExercise = {};
+      for (final list in fetched) {
+        for (final e in list) {
+          idToExercise[e.id] = e;
+        }
+      }
+
+      final merged = idToExercise.values.toList(growable: false);
+
+      final results = merged.where((exercise) {
         final nameMatch = exercise.name.toLowerCase().contains(
           query.toLowerCase(),
         );
@@ -220,10 +236,29 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
 
   void _navigateToWorkoutDetail(Exercise exercise) {
     Navigator.pop(context); // Close search dialog
+
+    // Convert Exercise to Workout for the detail screen
+    final workoutData = workout_model.Workout(
+      id: exercise.id,
+      name: exercise.name,
+      description: exercise.description,
+      image: exercise.imageUrl ?? '',
+      category: exercise.category,
+      duration: exercise.duration ?? 0,
+      calories: exercise.calories ?? 0,
+      difficulty: exercise.difficulty,
+      muscleGroups: exercise.muscleGroups,
+      steps: exercise.steps?.cast<workout_model.WorkoutStep>() ?? [],
+      isFavorite: exercise.isFavorite,
+      completedAt: null,
+      videoUrl: exercise.workout?['videoUrl'],
+      equipment: exercise.equipment,
+    );
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => WorkoutDetailScreen(exercise: exercise),
+        builder: (context) => WorkoutDetailScreen(workout: workoutData),
       ),
     );
   }
@@ -407,11 +442,11 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                 borderRadius: BorderRadius.circular(8),
                 gradient: LinearGradient(colors: TColor.primaryG),
               ),
-              child: exercise.displayImage.startsWith('http')
+              child: (exercise.imageUrl ?? '').startsWith('http')
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        exercise.displayImage,
+                        exercise.imageUrl ?? '',
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Icon(
                           exercise.isWorkout

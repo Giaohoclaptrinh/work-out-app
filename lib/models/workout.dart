@@ -98,11 +98,13 @@ class Workout {
   final String category;
   final int duration; // minutes
   final int calories;
-  final String difficulty;
+  final String? difficulty;
   final List<String> muscleGroups;
   final List<WorkoutStep> steps;
   final bool isFavorite;
   final DateTime? completedAt;
+  final String? videoUrl;
+  final String? equipment;
 
   Workout({
     required this.id,
@@ -112,11 +114,13 @@ class Workout {
     required this.category,
     required this.duration,
     required this.calories,
-    required this.difficulty,
+    this.difficulty,
     required this.muscleGroups,
     required this.steps,
     this.isFavorite = false,
     this.completedAt,
+    this.videoUrl,
+    this.equipment,
   });
 
   factory Workout.fromJson(Map<String, dynamic> json) {
@@ -128,7 +132,7 @@ class Workout {
       category: json['category'] ?? '',
       duration: json['duration'] ?? 0,
       calories: json['calories'] ?? 0,
-      difficulty: json['difficulty'] ?? 'Beginner',
+      difficulty: json['difficulty'],
       muscleGroups: List<String>.from(json['muscleGroups'] ?? []),
       steps: (json['steps'] as List? ?? [])
           .map((step) => WorkoutStep.fromJson(step))
@@ -137,6 +141,8 @@ class Workout {
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'])
           : null,
+      videoUrl: json['videoUrl'],
+      equipment: json['equipment'],
     );
   }
 
@@ -154,6 +160,8 @@ class Workout {
       'steps': steps.map((step) => step.toJson()).toList(),
       'isFavorite': isFavorite,
       'completedAt': completedAt?.toIso8601String(),
+      'videoUrl': videoUrl,
+      'equipment': equipment,
     };
   }
 
@@ -170,6 +178,8 @@ class Workout {
     List<WorkoutStep>? steps,
     bool? isFavorite,
     DateTime? completedAt,
+    String? videoUrl,
+    String? equipment,
   }) {
     return Workout(
       id: id ?? this.id,
@@ -184,6 +194,8 @@ class Workout {
       steps: steps ?? this.steps,
       isFavorite: isFavorite ?? this.isFavorite,
       completedAt: completedAt ?? this.completedAt,
+      videoUrl: videoUrl ?? this.videoUrl,
+      equipment: equipment ?? this.equipment,
     );
   }
 }

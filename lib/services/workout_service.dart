@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout.dart';
+import 'dart:convert'; // Added for json.decode
+import 'package:flutter/services.dart'; // Added for rootBundle
 
 class WorkoutService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -211,27 +213,13 @@ class WorkoutService {
 
       print('Completing workout: $workoutId for user: ${user.uid}');
 
-      // Tạo document ID unique để tránh conflict
-      final historyDocId =
-          '${user.uid}_${workoutId}_${DateTime.now().millisecondsSinceEpoch}';
+      // Cập nhật trực tiếp vào workout document với completedAt
+      await _firestore.collection('workouts').doc(workoutId).update({
+        'completedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
-      // Đảm bảo workout tồn tại trong Firestore trước khi lưu history
-      await _ensureWorkoutExists(workoutId);
-
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('workoutHistory')
-          .doc(historyDocId)
-          .set({
-            'completedAt': FieldValue.serverTimestamp(),
-            'workoutId': workoutId,
-            'userId': user.uid,
-          });
-
-      print(
-        'Workout completed successfully: $workoutId with doc ID: $historyDocId',
-      );
+      print('Workout completed successfully: $workoutId');
     } catch (e) {
       print('Error completing workout: $e');
     }
@@ -250,83 +238,96 @@ class WorkoutService {
     }
   }
 
-  // Lấy tips từ Firestore
-  Future<List<Map<String, dynamic>>> getWorkoutTips() async {
+  // Upload workout data from JSON to Firestore
+  Future<void> uploadWorkoutDataFromJson() async {
     try {
-      final snapshot = await _firestore.collection('workoutTips').get();
-      List<Map<String, dynamic>> tips = snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        return data;
-      }).toList();
+      final String jsonString = await rootBundle.loadString(
+        'assets/data/workouts.json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+      final List<dynamic> workouts = jsonData['workouts'];
 
-      // If no tips in Firestore, return sample tips
-      if (tips.isEmpty) {
-        tips = _getSampleTips();
+      print('Found ${workouts.length} workouts to upload');
+
+      for (int i = 0; i < workouts.length; i++) {
+        final workout = workouts[i];
+
+        // Convert steps if they exist
+        List<Map<String, dynamic>> steps = [];
+        if (workout['steps'] != null) {
+          steps = (workout['steps'] as List)
+              .map(
+                (step) => {
+                  'stepNumber': step['stepNumber'] ?? 1,
+                  'title': step['title'] ?? 'Step ${step['stepNumber'] ?? 1}',
+                  'description': step['description'] ?? '',
+                  'image': step['image'],
+                  'duration': step['duration'] ?? 30,
+                  'reps': step['reps'],
+                  'sets': step['sets'],
+                },
+              )
+              .toList();
+        }
+
+        final workoutData = {
+          'id': 'workout_${i + 1}',
+          'name': workout['title'],
+          'description': workout['description'],
+          'category': workout['muscleGroup'],
+          'image': workout['thumbnail'],
+          'videoUrl': workout['videoUrl'],
+          'equipment': workout['equipment'],
+          'calories': 150 + (i * 10), // Random calories
+          'duration': 10 + (i * 2), // Random duration in minutes
+          'difficulty': 'Intermediate',
+          'muscleGroups': [workout['muscleGroup']], // Convert to list
+          'steps': steps,
+          'isFavorite': false,
+          'completedAt': null,
+          'createdAt': FieldValue.serverTimestamp(),
+        };
+
+        await _firestore
+            .collection('workouts')
+            .doc('workout_${i + 1}')
+            .set(workoutData);
+
+        print('Uploaded workout ${i + 1}: ${workout['title']}');
       }
 
-      return tips;
+      print('Successfully uploaded ${workouts.length} workouts to Firestore!');
     } catch (e) {
-      print('Error fetching workout tips: $e');
-      return _getSampleTips();
+      print('Error uploading workout data: $e');
+      throw Exception('Failed to upload workout data: $e');
     }
   }
 
-  // Sample tips
-  List<Map<String, dynamic>> _getSampleTips() {
-    return [
-      {
-        'title': 'How to do a proper push-up',
-        'exercises': '3 exercises',
-        'time': '5 min',
-        'image': 'assets/img/Workout1.png',
-        'description':
-            'Learn the correct form for push-ups to maximize effectiveness and prevent injury.',
-      },
-      {
-        'title': 'Best exercises for abs',
-        'exercises': '4 exercises',
-        'time': '8 min',
-        'image': 'assets/img/Workout2.png',
-        'description':
-            'Target your core with these effective abdominal exercises.',
-      },
-      {
-        'title': 'Cardio workout guide',
-        'exercises': '5 exercises',
-        'time': '12 min',
-        'image': 'assets/img/Workout3.png',
-        'description':
-            'Boost your cardiovascular fitness with these cardio exercises.',
-      },
-      {
-        'title': 'Stretching routine',
-        'exercises': '6 exercises',
-        'time': '10 min',
-        'image': 'assets/img/Workout1.png',
-        'description':
-            'Improve flexibility and prevent injury with this stretching routine.',
-      },
-    ];
-  }
-
-  // Tìm kiếm workouts
-  Future<List<Workout>> searchWorkouts(String query) async {
+  // Import workouts from Firestore to local storage
+  Future<List<Workout>> importWorkoutsFromFirestore() async {
     try {
-      final snapshot = await _firestore
-          .collection('workouts')
-          .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThan: '$query\uf8ff')
-          .get();
+      print('Importing workouts from Firestore...');
 
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        return Workout.fromJson(data);
-      }).toList();
+      final snapshot = await _firestore.collection('workouts').get();
+      List<Workout> workouts = [];
+
+      for (var doc in snapshot.docs) {
+        try {
+          final data = doc.data();
+          data['id'] = doc.id;
+          final workout = Workout.fromJson(data);
+          workouts.add(workout);
+          print('Imported workout: ${workout.name}');
+        } catch (e) {
+          print('Error parsing workout ${doc.id}: $e');
+        }
+      }
+
+      print('Successfully imported ${workouts.length} workouts from Firestore');
+      return workouts;
     } catch (e) {
-      print('Error searching workouts: $e');
-      return [];
+      print('Error importing workouts from Firestore: $e');
+      throw Exception('Failed to import workouts: $e');
     }
   }
 }

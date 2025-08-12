@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:http/http.dart' as http; // unused after switching to YouTube import
+// import 'dart:convert'; // unused after switching to YouTube import
+
 import 'package:workout_app/models/exercise.dart';
+import 'package:workout_app/models/workout.dart' as workout_model;
 import 'package:workout_app/services/exercise_service.dart';
 import '../common/color_extension.dart';
 import '../utils/firestore_helper.dart';
-import '../widgets/round_button.dart';
+
 import '../widgets/workout_row.dart';
 import '../widgets/what_train_row.dart';
-import '../widgets/round_textfield.dart';
-import '../services/upload_exercises.dart';
+
+import '../services/workout_service.dart';
 import 'workout_detail_screen.dart';
 import '../utils/settings_helper.dart';
 
@@ -23,6 +26,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   final ExerciseService _exerciseService = ExerciseService();
+  final WorkoutService _workoutService = WorkoutService();
   final TextEditingController _searchController = TextEditingController();
 
   List<Exercise> _allWorkouts = [];
@@ -34,23 +38,18 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
 
   bool _isLoading = true;
   String _searchQuery = '';
-  String _selectedCategory = 'All';
-
-  final List<String> _categories = [
-    'All',
-    'Cardio',
-    'Strength',
-    'Flexibility',
-    'Yoga',
-    'HIIT',
-    'Pilates',
-  ];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _loadData();
+
+    // Reload data whenever tab changes back to this screen
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) return;
+      // No-op here; actual reload handled on resume below
+    });
   }
 
   @override
@@ -58,6 +57,25 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh custom list when returning to this screen
+    _exerciseService
+        .getUserCustomWorkouts()
+        .then((mine) {
+          if (!mounted) return;
+          setState(() {
+            _custom
+              ..clear()
+              ..addAll(mine);
+          });
+        })
+        .catchError((_) {
+          // ignore errors silently
+        });
   }
 
   Future<void> _loadData() async {
@@ -71,6 +89,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
         _exerciseService.getWorkoutTips(),
         _exerciseService.getFavoriteWorkouts(),
         _exerciseService.getWorkoutHistory(),
+        _exerciseService.getUserCustomWorkouts(),
       ]);
 
       if (mounted) {
@@ -80,6 +99,9 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
           _tips = futures[1] as List<Map<String, dynamic>>;
           _favorites = futures[2] as List<Exercise>;
           _history = futures[3] as List<Exercise>;
+          _custom
+            ..clear()
+            ..addAll(futures[4] as List<Exercise>);
           _isLoading = false;
         });
       }
@@ -96,14 +118,12 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
   void _filterWorkouts() {
     setState(() {
       _filteredWorkouts = _allWorkouts.where((workout) {
-        final matchesSearch =
-            workout.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+        return workout.name.toLowerCase().contains(
+              _searchQuery.toLowerCase(),
+            ) ||
             workout.description.toLowerCase().contains(
               _searchQuery.toLowerCase(),
             );
-        final matchesCategory =
-            _selectedCategory == 'All' || workout.category == _selectedCategory;
-        return matchesSearch && matchesCategory;
       }).toList();
     });
   }
@@ -114,7 +134,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
     });
     _filterWorkouts();
   }
-  
+
   Future<void> _showImportMenu() async {
     await showModalBottomSheet(
       context: context,
@@ -127,31 +147,52 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.link),
-                title: const Text('Import from URL (local only)'),
+                leading: const Icon(Icons.upload_file),
+                title: const Text('Upload Workout Data from JSON'),
                 onTap: () async {
                   Navigator.pop(context);
-                  final ex = await Navigator.of(context).push<Exercise>(
-                    MaterialPageRoute(
-                      builder: (_) => const UploadBrowserScreen(localOnly: true),
-                    ),
-                  );
-                  if (ex != null) _addCustomWorkout(ex);
+                  _uploadWorkoutData();
                 },
               ),
+
+              ListTile(
+                leading: const Icon(Icons.add),
+                title: const Text('Create Custom Workout'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  _showCreateWorkoutDialog();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.play_circle),
+                title: const Text('Import from YouTube'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  _showYouTubeInputDialog();
+                },
+              ),
+
               ListTile(
                 leading: const Icon(Icons.cloud_download),
                 title: const Text('Import from Cloud'),
                 onTap: () async {
                   Navigator.pop(context);
-                  // Fetch from Firestore and copy locally to Custom list
-                  final all = await _exerciseService.getAllWorkouts();
+                  // Fetch user's custom workouts from Firestore
+                  final mine = await _exerciseService.getUserCustomWorkouts();
                   if (!mounted) return;
                   setState(() {
                     _custom
                       ..clear()
-                      ..addAll(all);
+                      ..addAll(mine);
                   });
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.cloud_sync),
+                title: const Text('Import Workouts from Firebase'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  _importWorkoutsFromFirebase();
                 },
               ),
             ],
@@ -161,48 +202,587 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
     );
   }
 
-  void _onCategoryChanged(String category) {
-    setState(() {
-      _selectedCategory = category;
-    });
-    _filterWorkouts();
-  }
-
-  // Add a locally imported custom workout (not persisted to Firestore)
-  void _addCustomWorkout(Exercise ex) {
-    setState(() {
-      _custom.insert(0, ex);
-    });
-  }
-
-  Future<void> _cleanupOldSampleData() async {
+  Future<void> _uploadWorkoutData() async {
     try {
-      // Lấy tất cả documents có source = 'Sample'
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('exercises')
-          .where('source', isEqualTo: 'Sample')
-          .get();
-
-      if (querySnapshot.docs.isEmpty) return;
-
-      // Xóa theo batch
-      final batch = FirebaseFirestore.instance.batch();
-      for (final doc in querySnapshot.docs) {
-        batch.delete(doc.reference);
+      await _workoutService.uploadWorkoutDataFromJson();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Workout data uploaded successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Reload data
+        _loadData();
       }
-      await batch.commit();
     } catch (e) {
-      debugPrint('Cleanup error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading workout data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
-  Future<void> _uploadSampleWorkouts() async {
-    // Open import browser so user can choose which JSON to import
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const UploadBrowserScreen()),
+  Future<void> _importWorkoutsFromFirebase() async {
+    try {
+      final workouts = await _workoutService.importWorkoutsFromFirestore();
+      if (mounted) {
+        setState(() {
+          _custom.clear();
+          // Convert Workout to Exercise for compatibility
+          for (final workout in workouts) {
+            final exercise = Exercise(
+              id: workout.id,
+              name: workout.name,
+              description: workout.description,
+              category: workout.category,
+              imageUrl: workout.image,
+              muscleGroups: workout.muscleGroups,
+              instructions:
+                  workout.description, // Use description as instructions
+              difficulty: workout.difficulty ?? 'Intermediate',
+              equipment: workout.equipment,
+              duration: workout.duration,
+              calories: workout.calories,
+              steps: workout.steps.cast<WorkoutStep>(),
+              isFavorite: workout.isFavorite,
+              type: 'workout',
+              workout: workout.toJson(),
+            );
+            _custom.add(exercise);
+          }
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Imported ${workouts.length} workouts from Firebase!',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error importing workouts: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showCreateWorkoutDialog() {
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
+    final TextEditingController durationController = TextEditingController();
+    final TextEditingController caloriesController = TextEditingController();
+    final TextEditingController youtubeUrlController = TextEditingController();
+    String selectedDifficulty = 'Intermediate';
+    String selectedCategory = 'Custom';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Custom Workout'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Workout Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              // YouTube URL (optional)
+              TextField(
+                controller: youtubeUrlController,
+                decoration: const InputDecoration(
+                  labelText: 'YouTube URL (optional)',
+                  hintText: 'https://www.youtube.com/watch?v=...',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: durationController,
+                      decoration: const InputDecoration(
+                        labelText: 'Duration (minutes)',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextField(
+                      controller: caloriesController,
+                      decoration: const InputDecoration(
+                        labelText: 'Calories',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: selectedDifficulty,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Difficulty',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: ['Beginner', 'Intermediate', 'Advanced']
+                          .map(
+                            (e) => DropdownMenuItem(value: e, child: Text(e)),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        selectedDifficulty = value!;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: selectedCategory,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Category',
+                        border: OutlineInputBorder(),
+                      ),
+                      items:
+                          [
+                                'Custom',
+                                'Cardio',
+                                'Strength',
+                                'Flexibility',
+                                'Yoga',
+                              ]
+                              .map(
+                                (e) =>
+                                    DropdownMenuItem(value: e, child: Text(e)),
+                              )
+                              .toList(),
+                      onChanged: (value) {
+                        selectedCategory = value!;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              final description = descriptionController.text.trim();
+              final duration = int.tryParse(durationController.text) ?? 10;
+              final calories = int.tryParse(caloriesController.text) ?? 100;
+              final youtubeUrl = youtubeUrlController.text.trim();
+
+              if (name.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a workout name'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+
+              // Parse YouTube URL if provided
+              String? videoId;
+              String? embeddedUrl;
+              String? thumbnailUrl;
+              if (youtubeUrl.isNotEmpty &&
+                  (youtubeUrl.contains('youtube.com') ||
+                      youtubeUrl.contains('youtu.be'))) {
+                try {
+                  if (youtubeUrl.contains('youtube.com/watch?v=')) {
+                    videoId = youtubeUrl.split('watch?v=')[1].split('&')[0];
+                  } else if (youtubeUrl.contains('youtu.be/')) {
+                    videoId = youtubeUrl.split('youtu.be/')[1].split('?')[0];
+                  }
+                  if (videoId != null && videoId.isNotEmpty) {
+                    embeddedUrl = 'https://www.youtube.com/embed/$videoId';
+                    thumbnailUrl =
+                        'https://img.youtube.com/vi/$videoId/maxresdefault.jpg';
+                  }
+                } catch (_) {}
+              }
+
+              final exercise = Exercise(
+                id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+                name: name,
+                description: description,
+                category: selectedCategory,
+                imageUrl: thumbnailUrl, // Use YouTube thumbnail if provided
+                muscleGroups: [selectedCategory],
+                instructions: description,
+                difficulty: selectedDifficulty,
+                equipment: 'Bodyweight',
+                duration: duration,
+                calories: calories,
+                steps: null,
+                isFavorite: false,
+                type: 'custom',
+                workout: {
+                  'name': name,
+                  'description': description,
+                  'category': selectedCategory,
+                  'difficulty': selectedDifficulty,
+                  'duration': duration,
+                  'calories': calories,
+                  'videoUrl': embeddedUrl,
+                  'youtubeId': videoId,
+                  'thumbnailUrl': thumbnailUrl,
+                },
+              );
+
+              setState(() {
+                _custom.add(exercise);
+              });
+
+              // Persist to Firestore under user's customWorkouts
+              ExerciseService().saveCustomWorkout(exercise).catchError((e) {
+                // Non-blocking: just log error
+                // ignore: avoid_print
+                print('Failed to save custom workout: $e');
+                return '';
+              });
+
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Created custom workout: $name'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
     );
-    // After import, reload data
-    if (mounted) await _loadData();
+  }
+
+  void _showYouTubeInputDialog() {
+    final TextEditingController urlController = TextEditingController();
+    final TextEditingController titleController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
+    final TextEditingController durationController = TextEditingController();
+    final TextEditingController caloriesController = TextEditingController();
+    String selectedDifficulty = 'Intermediate';
+    String selectedCategory = 'Custom';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Import Workout from YouTube'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter a YouTube video URL to create a workout:',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: urlController,
+                decoration: const InputDecoration(
+                  hintText: 'https://www.youtube.com/watch?v=...',
+                  border: OutlineInputBorder(),
+                  helperText: 'Paste YouTube video URL here',
+                ),
+                keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Workout Title',
+                  border: OutlineInputBorder(),
+                  helperText: 'Enter a title for this workout',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                  helperText: 'Brief description of the workout',
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: durationController,
+                      decoration: const InputDecoration(
+                        labelText: 'Duration (min)',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextField(
+                      controller: caloriesController,
+                      decoration: const InputDecoration(
+                        labelText: 'Calories',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: selectedDifficulty,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Difficulty',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: ['Beginner', 'Intermediate', 'Advanced']
+                          .map(
+                            (e) => DropdownMenuItem(value: e, child: Text(e)),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        selectedDifficulty = value!;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: selectedCategory,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Category',
+                        border: OutlineInputBorder(),
+                      ),
+                      items:
+                          [
+                                'Custom',
+                                'Cardio',
+                                'Strength',
+                                'Flexibility',
+                                'Yoga',
+                              ]
+                              .map(
+                                (e) =>
+                                    DropdownMenuItem(value: e, child: Text(e)),
+                              )
+                              .toList(),
+                      onChanged: (value) {
+                        selectedCategory = value!;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final url = urlController.text.trim();
+              final title = titleController.text.trim();
+              final description = descriptionController.text.trim();
+              final duration = int.tryParse(durationController.text) ?? 10;
+              final calories = int.tryParse(caloriesController.text) ?? 100;
+
+              if (url.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a YouTube URL'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+
+              if (title.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a workout title'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+
+              Navigator.pop(context);
+              await _importWorkoutFromYouTube(
+                url,
+                title,
+                description,
+                duration,
+                calories,
+                selectedDifficulty,
+                selectedCategory,
+              );
+            },
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _importWorkoutFromYouTube(
+    String url,
+    String title,
+    String description,
+    int duration,
+    int calories,
+    String difficulty,
+    String category,
+  ) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Creating workout from YouTube...'),
+            ],
+          ),
+        ),
+      );
+
+      // Validate YouTube URL
+      if (!url.contains('youtube.com') && !url.contains('youtu.be')) {
+        throw Exception('Please enter a valid YouTube URL');
+      }
+
+      // Extract video ID from YouTube URL
+      String videoId = '';
+      if (url.contains('youtube.com/watch?v=')) {
+        videoId = url.split('watch?v=')[1].split('&')[0];
+      } else if (url.contains('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1].split('?')[0];
+      } else {
+        throw Exception('Invalid YouTube URL format');
+      }
+
+      // Create YouTube thumbnail URL
+      final thumbnailUrl =
+          'https://img.youtube.com/vi/$videoId/maxresdefault.jpg';
+
+      // Create embedded video URL for WebView
+      final embeddedUrl = 'https://www.youtube.com/embed/$videoId';
+
+      // Create Exercise object from YouTube video
+      final exercise = Exercise(
+        id: 'youtube_${DateTime.now().millisecondsSinceEpoch}',
+        name: title,
+        description: description,
+        category: category,
+        imageUrl: thumbnailUrl,
+        muscleGroups: [category],
+        instructions: description,
+        difficulty: difficulty,
+        equipment: 'Bodyweight',
+        duration: duration,
+        calories: calories,
+        steps: null,
+        isFavorite: false,
+        type: 'youtube',
+        workout: {
+          'name': title,
+          'description': description,
+          'category': category,
+          'difficulty': difficulty,
+          'duration': duration,
+          'calories': calories,
+          'videoUrl': embeddedUrl,
+          'youtubeId': videoId,
+          'thumbnailUrl': thumbnailUrl,
+        },
+      );
+
+      setState(() {
+        _custom.add(exercise);
+      });
+
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Successfully created workout from YouTube: $title'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error creating workout from YouTube: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildCustomTab() {
@@ -217,9 +797,16 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
             Center(
               child: Column(
                 children: [
-                  Icon(Icons.collections_bookmark, size: 64, color: TColor.gray),
+                  Icon(
+                    Icons.collections_bookmark,
+                    size: 64,
+                    color: TColor.gray,
+                  ),
                   const SizedBox(height: 8),
-                  Text('No custom workouts yet', style: TextStyle(color: TColor.gray)),
+                  Text(
+                    'No custom workouts yet',
+                    style: TextStyle(color: TColor.gray),
+                  ),
                 ],
               ),
             )
@@ -241,7 +828,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                   child: WorkoutRow(
                     wObj: {
                       'name': w.name,
-                      'image': w.displayImage,
+                      'image': w.imageUrl ?? '',
                       'kcal': (w.calories ?? 0).toString(),
                       'time': (w.duration ?? 0).toString(),
                       'progress': 0.0,
@@ -375,14 +962,17 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
           preferredSize: const Size.fromHeight(48),
           child: MediaQuery(
             data: MediaQuery.of(context).copyWith(
-              textScaler: const TextScaler.linear(1.0), // fixed, not affected by global scaling
+              textScaler: const TextScaler.linear(
+                1.0,
+              ), // fixed, not affected by global scaling
             ),
             child: TabBar(
               controller: _tabController,
               isScrollable: false,
               labelColor: TColor.primaryColor1,
-              unselectedLabelColor:
-                  SettingsHelper.getSecondaryTextColor(context),
+              unselectedLabelColor: SettingsHelper.getSecondaryTextColor(
+                context,
+              ),
               indicatorColor: TColor.primaryColor1,
               labelStyle: const TextStyle(
                 fontSize: 14,
@@ -438,61 +1028,6 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                         vertical: 12,
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                // Category Filter
-                SizedBox(
-                  height: 45,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _categories.length,
-                    itemBuilder: (context, index) {
-                      final category = _categories[index];
-                      final isSelected = category == _selectedCategory;
-
-                      return Container(
-                        margin: const EdgeInsets.only(right: 10),
-                        child: Container(
-                          constraints: const BoxConstraints(
-                            minWidth: 80,
-                            maxWidth: 150,
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? TColor.primaryColor1
-                                : SettingsHelper.getCardColor(context),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isSelected
-                                  ? TColor.primaryColor1
-                                  : SettingsHelper.getSecondaryTextColor(
-                                      context,
-                                    ),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            category,
-                            style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : SettingsHelper.getTextColor(context),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      );
-                    },
                   ),
                 ),
               ],
@@ -604,7 +1139,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                 (workout) => WorkoutRow(
                   wObj: {
                     'name': workout.name,
-                    'image': workout.displayImage,
+                    'image': workout.imageUrl ?? '',
                     'kcal': workout.calories.toString(),
                     'time': workout.duration.toString(),
                     'progress': 0.0,
@@ -672,7 +1207,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                     (workout) => WorkoutRow(
                       wObj: {
                         'name': workout.name,
-                        'image': workout.displayImage,
+                        'image': workout.imageUrl ?? '',
                         'kcal': workout.calories.toString(),
                         'time': workout.duration.toString(),
                         'progress': 0.0,
@@ -740,7 +1275,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                     (workout) => WorkoutRow(
                       wObj: {
                         'name': workout.name,
-                        'image': workout.displayImage,
+                        'image': workout.imageUrl ?? '',
                         'kcal': workout.calories.toString(),
                         'time': workout.duration.toString(),
                         'progress': 1.0, // Completed
@@ -756,20 +1291,31 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
   }
 
   void _navigateToWorkoutDetail(Exercise workout) {
+    // Convert Exercise to Workout for the detail screen
+    final workoutData = workout_model.Workout(
+      id: workout.id,
+      name: workout.name,
+      description: workout.description,
+      image: workout.imageUrl ?? '',
+      category: workout.category,
+      duration: workout.duration ?? 0,
+      calories: workout.calories ?? 0,
+      difficulty: workout.difficulty,
+      muscleGroups: workout.muscleGroups,
+      steps: workout.steps?.cast<workout_model.WorkoutStep>() ?? [],
+      isFavorite: workout.isFavorite,
+      completedAt: null,
+      videoUrl: workout.workout?['videoUrl'], // Get videoUrl from workout data
+      equipment: workout.equipment,
+    );
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => WorkoutDetailScreen(
-          exercise: workout,
-          onFavoriteChanged: () {
-            // Refresh data when favorite changes
-            _loadData();
-          },
-        ),
+        builder: (context) => WorkoutDetailScreen(workout: workoutData),
       ),
     ).then((result) {
       // Refresh data when returning from detail screen
-      // If workout was completed (result == true), refresh immediately
       if (result == true) {
         _loadData();
       }

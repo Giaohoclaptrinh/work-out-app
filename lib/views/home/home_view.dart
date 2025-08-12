@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+
 import '../../common/color_extension.dart';
 import '../../services/dashboard_service.dart';
 import '../../models/dashboard_data.dart';
@@ -17,14 +16,11 @@ import '../../widgets/what_train_row.dart';
 import '../../widgets/upcoming_workout_row.dart';
 import '../../widgets/exercises_row.dart';
 import '../../widgets/dashboard_card.dart';
-import '../../services/workout_service.dart';
+import '../../services/exercise_service.dart';
 import '../../services/notification_service.dart';
 import '../../screens/bmi_chart_screen.dart';
 import '../../utils/debug_helper.dart';
 import '../../utils/settings_helper.dart';
-import '../../screens/meal_planner_screen.dart';
-import '../../screens/workout_tracker_screen.dart';
-import '../../screens/settings_screen.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -182,7 +178,7 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                 ),
               ),
               const SizedBox(height: 10),
-             
+
               const SizedBox(height: 10),
               Expanded(
                 child: notificationsArr.isEmpty
@@ -358,8 +354,8 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
 
   Future<void> _loadRealData() async {
     try {
-      final workoutService = WorkoutService();
-      final tips = await workoutService.getWorkoutTips();
+      final exerciseService = ExerciseService();
+      final tips = await exerciseService.getWorkoutTips();
       final notifications = await _notificationService.getUserNotifications(
         limit: 5,
       );
@@ -430,68 +426,58 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                         // TODAY OVERVIEW
                         if (_dashboardData != null)
                           SettingsHelper.createFixedFontTodayOverviewSection(
-                                  title: "Today's Overview",
-                                  dashboardCards: [
-                                    DashboardCard(
-                                      title: "Calories Consumed",
-                                      value:
-                                          (_dashboardData
-                                                      ?.totalCaloriesConsumed ??
-                                                  0)
-                                              .toString(),
-                                      unit: "kcal",
-                                      icon: Icons.local_fire_department,
-                                      color: TColor.primaryColor1,
-                                      progress:
-                                          (_dashboardData
-                                                  ?.totalCaloriesConsumed ??
-                                              0) /
-                                          2000,
-                                    ),
-                                    DashboardCard(
-                                      title: "Calories Burned",
-                                      value:
-                                          (_dashboardData
-                                                      ?.totalCaloriesBurned ??
-                                                  0)
-                                              .toString(),
-                                      unit: "kcal",
-                                      icon: Icons.fitness_center,
-                                      color: TColor.secondaryColor1,
-                                      progress:
-                                          (_dashboardData
-                                                  ?.totalCaloriesBurned ??
-                                              0) /
-                                          500,
-                                    ),
-                                    DashboardCard(
-                                      title: "Water Intake",
-                                      value:
-                                          (_dashboardData?.waterIntake ?? 0.0)
-                                              .toStringAsFixed(1),
-                                      unit: "ml",
-                                      icon: Icons.water_drop,
-                                      color: Colors.blue,
-                                      progress:
-                                          (_dashboardData?.waterIntake ?? 0.0) /
-                                          2000,
-                                    ),
-                                    DashboardCard(
-                                      title: "Steps Taken",
-                                      value: (_dashboardData?.stepsTaken ?? 0)
-                                          .toString(),
-                                      unit: "steps",
-                                      icon: Icons.directions_walk,
-                                      color: Colors.green,
-                                      progress:
-                                          (_dashboardData?.stepsTaken ?? 0) /
-                                          10000,
-                                    ),
-                                  ],
-                                  onRefresh: () =>
-                                      _loadDashboardData(forceRefresh: true),
-                                  context: context,
-                                ),
+                            title: "Today's Overview",
+                            dashboardCards: [
+                              DashboardCard(
+                                title: "Calories Consumed",
+                                value:
+                                    (_dashboardData?.totalCaloriesConsumed ?? 0)
+                                        .toString(),
+                                unit: "kcal",
+                                icon: Icons.local_fire_department,
+                                color: TColor.primaryColor1,
+                                progress:
+                                    (_dashboardData?.totalCaloriesConsumed ??
+                                        0) /
+                                    2000,
+                              ),
+                              DashboardCard(
+                                title: "Calories Burned",
+                                value:
+                                    (_dashboardData?.totalCaloriesBurned ?? 0)
+                                        .toString(),
+                                unit: "kcal",
+                                icon: Icons.fitness_center,
+                                color: TColor.secondaryColor1,
+                                progress:
+                                    (_dashboardData?.totalCaloriesBurned ?? 0) /
+                                    500,
+                              ),
+                              DashboardCard(
+                                title: "Water Intake",
+                                value: (_dashboardData?.waterIntake ?? 0.0)
+                                    .toStringAsFixed(1),
+                                unit: "ml",
+                                icon: Icons.water_drop,
+                                color: Colors.blue,
+                                progress:
+                                    (_dashboardData?.waterIntake ?? 0.0) / 2000,
+                              ),
+                              DashboardCard(
+                                title: "Steps Taken",
+                                value: (_dashboardData?.stepsTaken ?? 0)
+                                    .toString(),
+                                unit: "steps",
+                                icon: Icons.directions_walk,
+                                color: Colors.green,
+                                progress:
+                                    (_dashboardData?.stepsTaken ?? 0) / 10000,
+                              ),
+                            ],
+                            onRefresh: () =>
+                                _loadDashboardData(forceRefresh: true),
+                            context: context,
+                          ),
 
                         const SizedBox(height: 20),
 
@@ -805,7 +791,6 @@ class _BMICard extends StatelessWidget {
     );
   }
 }
-
 
 class _ActivityStatusCard extends StatelessWidget {
   final Size media;
