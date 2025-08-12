@@ -1,151 +1,225 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:http/http.dart' as http;
+import 'package:workout_app/models/exercise.dart';
+import '../common/color_extension.dart';
 
-Future<void> uploadExercisesToFirestore() async {
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  final CollectionReference exercisesCollection = firestore.collection(
-    'exercises',
+/// Upload workouts from a bundled JSON file in assets/data/
+/// jsonAssetPath example: 'assets/data/workouts.json'
+Future<void> uploadExercisesFromJson(String jsonAssetPath) async {
+  // Validate asset presence via AssetManifest (gives clearer error)
+  try {
+    final manifestRaw = await rootBundle.loadString('AssetManifest.json');
+    final Map<String, dynamic> manifest = json.decode(manifestRaw);
+    if (!manifest.keys.contains(jsonAssetPath)) {
+      throw Exception('Asset not found: ' + jsonAssetPath + '. Did you add it to pubspec.yaml and restart the app?');
+    }
+  } catch (_) {
+    // ignore if manifest unavailable; loadString will still throw a clear error
+  }
+
+  // Load and parse JSON
+  final raw = await rootBundle.loadString(jsonAssetPath);
+  final Map<String, dynamic> payload = json.decode(raw) as Map<String, dynamic>;
+  final List<dynamic> workouts = payload['workouts'] as List<dynamic>? ?? [];
+
+  // Build list strictly from JSON; if empty, skip upload
+  final List<Map<String, dynamic>> workoutExercises =
+      workouts.cast<Map<String, dynamic>>();
+  if (workoutExercises.isEmpty) {
+    debugPrint('uploadExercisesFromJson: no workouts in ' + jsonAssetPath);
+    return;
+  }
+
+  await _uploadWorkoutMaps(workoutExercises);
+}
+
+/// Upload workouts from a remote JSON URL (expects same schema as the assets JSON)
+Future<void> uploadExercisesFromUrl(String url) async {
+  final uri = Uri.tryParse(url);
+  if (uri == null || !(uri.isScheme('https') || uri.isScheme('http'))) {
+    throw Exception('Invalid URL: $url');
+  }
+
+  final res = await http.get(uri);
+  if (res.statusCode < 200 || res.statusCode >= 300) {
+    throw Exception('Failed to fetch JSON: HTTP ${res.statusCode}');
+  }
+
+  final decoded = json.decode(res.body);
+  List<Map<String, dynamic>> workoutExercises;
+  if (decoded is Map<String, dynamic>) {
+    final List<dynamic> list = decoded['workouts'] as List<dynamic>? ?? [];
+    workoutExercises = list.cast<Map<String, dynamic>>();
+  } else if (decoded is List) {
+    // Also support a raw list form
+    workoutExercises = decoded.cast<Map<String, dynamic>>();
+  } else {
+    throw Exception('Unsupported JSON structure. Expected { "workouts": [...] } or a JSON array.');
+  }
+
+  if (workoutExercises.isEmpty) {
+    throw Exception('No workouts found in the provided JSON.');
+  }
+
+  await _uploadWorkoutMaps(workoutExercises);
+}
+
+/// Import a single workout from a user-provided URL.
+/// Supported sources:
+///  - YouTube: extract videoId, build workout object with thumbnail
+///  - Generic page: fetch and try to read OpenGraph (og:title, og:description, og:image)
+Future<void> uploadWorkoutFromUrl(String url) async {
+  final uri = Uri.tryParse(url);
+  if (uri == null || !(uri.isScheme('https') || uri.isScheme('http'))) {
+    throw Exception('Invalid URL: $url');
+  }
+
+  // If YouTube URL, extract videoId and create a simple workout
+  String? videoId = _tryExtractYouTubeId(url);
+  String? title;
+  String? description;
+  String? imageUrl;
+
+  if (videoId != null) {
+    title = 'YouTube Workout';
+    description = 'Imported from YouTube: ' + url;
+    imageUrl = _generateYouTubeThumbnail(videoId);
+  } else {
+    // Fallback: fetch page and parse minimal OpenGraph metadata
+    final res = await http.get(uri);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('Failed to fetch page: HTTP ${res.statusCode}');
+    }
+    final html = res.body;
+    String? ogTitle = _matchMetaContent(html, 'og:title');
+    String? ogDesc = _matchMetaContent(html, 'og:description');
+    String? ogImage = _matchMetaContent(html, 'og:image');
+    title = ogTitle ?? 'Imported Workout';
+    description = ogDesc ?? ('Imported from ' + url);
+    imageUrl = ogImage;
+  }
+
+  final workoutMap = <String, dynamic>{
+    'title': title ?? 'Imported Workout',
+    'muscleGroup': 'General',
+    'videoUrl': url,
+    'thumbnail': imageUrl ?? '',
+    'description': description ?? '',
+    'equipment': '',
+  };
+
+  await _uploadWorkoutMaps([workoutMap]);
+}
+
+/// Parse a URL into a local Exercise object without writing to Firestore
+Future<Exercise> parseExerciseFromUrl(String url) async {
+  String? videoId = _tryExtractYouTubeId(url);
+  String? title;
+  String? description;
+  String? imageUrl;
+
+  if (videoId != null) {
+    title = 'YouTube Workout';
+    description = 'Imported from YouTube: ' + url;
+    imageUrl = _generateYouTubeThumbnail(videoId);
+  } else {
+    final res = await http.get(Uri.parse(url));
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final html = res.body;
+      title = _matchMetaContent(html, 'og:title') ?? 'Imported Workout';
+      description = _matchMetaContent(html, 'og:description') ?? 'Imported from ' + url;
+      imageUrl = _matchMetaContent(html, 'og:image');
+    } else {
+      title = 'Imported Workout';
+      description = 'Imported from ' + url;
+      imageUrl = '';
+    }
+  }
+
+  return Exercise(
+    id: 'local-' + DateTime.now().millisecondsSinceEpoch.toString(),
+    name: title!,
+    description: description ?? '',
+    category: 'Custom',
+    imageUrl: imageUrl,
+    muscleGroups: const ['General'],
+    instructions: description ?? '',
+    duration: 20,
+    calories: 60,
+    steps: const [],
+    type: 'workout',
   );
+}
 
-  final List<Map<String, dynamic>> workoutExercises = [
-    {
-      "title": "Push-Up",
-      "muscleGroup": "Chest",
-      "videoUrl": "https://www.youtube.com/embed/IODxDxX7oi4",
-      "thumbnail": "https://img.youtube.com/vi/IODxDxX7oi4/maxresdefault.jpg",
-      "description":
-          "The push-up is a fundamental bodyweight exercise that strengthens the chest, triceps, and shoulders. Begin in a high plank position with your hands slightly wider than shoulder-width apart. Lower your body until your chest is just above the ground, then push yourself back up. Keep your core tight and body aligned throughout the movement. For beginners, you can perform push-ups on your knees or against a wall to build strength.",
-      "equipment": "Bodyweight",
-    },
-    {
-      "title": "Bodyweight Squat",
-      "muscleGroup": "Legs",
-      "videoUrl": "https://www.youtube.com/embed/aclHkVaku9U",
-      "thumbnail": "https://img.youtube.com/vi/aclHkVaku9U/0.jpg",
-      "description":
-          "Bodyweight squats are a lower-body exercise that strengthens the quads, hamstrings, glutes, and calves. Stand with your feet shoulder-width apart, lower your hips back and down as if sitting into a chair, then return to standing. Keep your chest lifted and knees aligned with your toes. Focus on controlled movement and a full range of motion.",
-      "equipment": "Bodyweight",
-    },
-    {
-      "title": "Plank",
-      "muscleGroup": "Core",
-      "videoUrl": "https://www.youtube.com/embed/pSHjTRCQxIw",
-      "thumbnail": "https://img.youtube.com/vi/pSHjTRCQxIw/hqdefault.jpg",
-      "description":
-          "The plank is an excellent exercise for strengthening your entire core, including your abs, obliques, and lower back. Start in a push-up position, then lower onto your forearms, keeping your body in a straight line from head to heels. Engage your core and avoid letting your hips sag or rise too high. Hold this position for as long as you can maintain proper form.",
-      "equipment": "Bodyweight",
-    },
-    {
-      "title": "Lunges",
-      "muscleGroup": "Legs",
-      "videoUrl": "https://www.youtube.com/embed/D7KaRcUTQeE",
-      "thumbnail": "https://img.youtube.com/vi/D7KaRcUTQeE/hqdefault.jpg",
-      "description":
-          "Lunges are a fantastic exercise for building lower body strength and improving balance. Stand with your feet hip-width apart. Step forward with one leg, lowering your hips until both knees are bent at approximately a 90-degree angle. Ensure your front knee is directly above your ankle and your back knee hovers just above the ground. Push off your front foot to return to the starting position and alternate legs.",
-      "equipment": "Bodyweight",
-    },
-    {
-      "title": "Dumbbell Row",
-      "muscleGroup": "Back",
-      "videoUrl": "https://www.youtube.com/embed/6TSP1TRMUzs",
-      "thumbnail": "https://img.youtube.com/vi/6TSP1TRMUzs/hqdefault.jpg",
-      "description":
-          "The dumbbell row targets your back muscles, particularly the lats, and also works your biceps. Place one hand and one knee on a bench for support, keeping your back flat. With a dumbbell in your free hand, pull the weight up towards your chest, squeezing your shoulder blade. Lower the dumbbell with control. This exercise helps improve posture and upper body pulling strength.",
-      "equipment": "Dumbbell, Bench",
-    },
-    {
-      "title": "Overhead Press (Dumbbell)",
-      "muscleGroup": "Shoulders",
-      "videoUrl": "https://www.youtube.com/embed/qEwKCR5JCog",
-      "thumbnail": "https://img.youtube.com/vi/qEwKCR5JCog/hqdefault.jpg",
-      "description":
-          "The dumbbell overhead press is a great exercise for building strong shoulders and triceps. Sit or stand with a dumbbell in each hand at shoulder height, palms facing forward. Press the dumbbells directly overhead until your arms are fully extended, but don't lock your elbows. Slowly lower the dumbbells back to the starting position. Keep your core engaged to protect your lower back.",
-      "equipment": "Dumbbell",
-    },
-    {
-      "title": "Bicep Curl (Dumbbell)",
-      "muscleGroup": "Biceps",
-      "videoUrl": "https://www.youtube.com/embed/ykJmrZ5v0Oo",
-      "thumbnail": "https://img.youtube.com/vi/ykJmrZ5v0Oo/hqdefault.jpg",
-      "description":
-          "The dumbbell bicep curl is a classic exercise for isolating and strengthening the biceps. Stand or sit with a dumbbell in each hand, palms facing forward. Keeping your elbows tucked close to your body, curl the dumbbells up towards your shoulders. Squeeze your biceps at the top of the movement, then slowly lower the weights back down. Avoid swinging your body to lift the weights.",
-      "equipment": "Dumbbell",
-    },
-    {
-      "title": "Triceps Extension (Overhead Dumbbell)",
-      "muscleGroup": "Triceps",
-      "videoUrl": "https://www.youtube.com/embed/_gsUck-7M74",
-      "thumbnail": "https://img.youtube.com/vi/_gsUck-7M74/hqdefault.jpg",
-      "description":
-          "The overhead dumbbell triceps extension effectively targets all three heads of the triceps. Hold one dumbbell with both hands and extend it overhead. Keeping your elbows close to your head, slowly lower the dumbbell behind you by bending your elbows. Extend your arms back up to the starting position, feeling the contraction in your triceps. Maintain a stable core throughout the exercise.",
-      "equipment": "Dumbbell",
-    },
-    {
-      "title": "Glute Bridge",
-      "muscleGroup": "Glutes",
-      "videoUrl": "https://www.youtube.com/embed/OUgsJ8-Vi0E",
-      "thumbnail": "https://img.youtube.com/vi/OUgsJ8-Vi0E/hqdefault.jpg",
-      "description":
-          "The glute bridge is a simple yet effective exercise for strengthening the glutes and hamstrings, and it's great for beginners. Lie on your back with your knees bent and feet flat on the floor, hip-width apart. Press through your heels to lift your hips off the ground until your body forms a straight line from your shoulders to your knees. Squeeze your glutes at the top, then slowly lower back down.",
-      "equipment": "Bodyweight",
-    },
-    {
-      "title": "Bird-Dog",
-      "muscleGroup": "Core, Back",
-      "videoUrl": "https://www.youtube.com/embed/wqzrb67Dwf8",
-      "thumbnail": "https://img.youtube.com/vi/wqzrb67Dwf8/hqdefault.jpg",
-      "description":
-          "The bird-dog is a fantastic exercise for improving core stability, balance, and strengthening the lower back. Start on all fours, with your hands directly under your shoulders and knees under your hips. Slowly extend one arm straight forward and the opposite leg straight back, keeping your core tight and hips level. Hold briefly, then return to the starting position and alternate sides. Focus on controlled movement and avoiding any rocking.",
-      "equipment": "Bodyweight",
-    },
-  ];
+/// Normalize and upload list of workout maps to Firestore
+Future<void> _uploadWorkoutMaps(List<Map<String, dynamic>> workoutExercises) async {
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  final CollectionReference exercisesCollection = firestore.collection('exercises');
 
   for (var exerciseData in workoutExercises) {
+    // Accept flexible keys from JSON
+    final String title = (exerciseData['title'] ?? exerciseData['name'] ?? '').toString();
+    final String muscleGroup = (exerciseData['muscleGroup'] ?? (exerciseData['muscleGroups'] is List && (exerciseData['muscleGroups'] as List).isNotEmpty ? (exerciseData['muscleGroups'] as List).first : '')).toString();
+    final String videoUrl = (exerciseData['videoUrl'] ?? '').toString();
+    final String description = (exerciseData['description'] ?? '').toString();
+    final String equipment = (exerciseData['equipment'] ?? '').toString();
+
     await exercisesCollection.add({
-      'name': exerciseData['title'], // Sử dụng 'name' thay vì 'title'
-      'title': exerciseData['title'], // Giữ lại title để tương thích
-      'category': _mapMuscleGroupToCategory(exerciseData['muscleGroup']),
-      'muscleGroups': [exerciseData['muscleGroup']], // Array of muscle groups
-      'videoUrl': exerciseData['videoUrl'],
+      'name': title, // Sử dụng 'name' thay vì 'title'
+      'title': title, // Giữ lại title để tương thích
+      'category': _mapMuscleGroupToCategory(muscleGroup),
+      'muscleGroups': [muscleGroup], // Array of muscle groups
+      'videoUrl': videoUrl,
       'imageUrl': _generateYouTubeThumbnail(
-        _extractYouTubeVideoId(exerciseData['videoUrl']),
+        _extractYouTubeVideoId(videoUrl),
       ), // Generate thumbnail từ video ID
       'image': _generateYouTubeThumbnail(
-        _extractYouTubeVideoId(exerciseData['videoUrl']),
+        _extractYouTubeVideoId(videoUrl),
       ), // Để tương thích
-      'description': exerciseData['description'],
-      'equipment': exerciseData['equipment'],
+      'description': description,
+      'equipment': equipment,
       'type': 'workout', // Đánh dấu đây là workout
       'duration': _estimateDuration(
-        exerciseData['title'],
+        title,
       ), // Ước tính thời gian
-      'calories': _estimateCalories(exerciseData['title']), // Ước tính calories
+      'calories': _estimateCalories(title), // Ước tính calories
       'difficulty': 'Beginner', // Mặc định là Beginner
       'isFavorite': false,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
       'source': 'Sample',
-      'steps': _createWorkoutSteps(exerciseData), // Tạo workout steps
+      'steps': _createWorkoutSteps({
+        'title': title,
+        'description': description,
+        'thumbnail': exerciseData['thumbnail'] ?? '',
+      }), // Tạo workout steps
       // ✅ TRƯỜNG WORKOUT - Lưu toàn bộ dữ liệu workout
       'workout': {
-        'title': exerciseData['title'],
-        'muscleGroup': exerciseData['muscleGroup'],
-        'videoUrl': exerciseData['videoUrl'],
+        'title': title,
+        'muscleGroup': muscleGroup,
+        'videoUrl': videoUrl,
         'thumbnail': _generateYouTubeThumbnail(
-          _extractYouTubeVideoId(exerciseData['videoUrl']),
+          _extractYouTubeVideoId(videoUrl),
         ),
-        'description': exerciseData['description'],
-        'equipment': exerciseData['equipment'],
-        'duration': _estimateDuration(exerciseData['title']),
-        'calories': _estimateCalories(exerciseData['title']),
+        'description': description,
+        'equipment': equipment,
+        'duration': _estimateDuration(title),
+        'calories': _estimateCalories(title),
         'difficulty': 'Beginner',
-        'steps': _createWorkoutSteps(exerciseData),
+        'steps': _createWorkoutSteps({
+          'title': title,
+          'description': description,
+          'thumbnail': exerciseData['thumbnail'] ?? '',
+        }),
         'videoMetadata': {
           'platform': 'youtube',
-          'videoId': _extractYouTubeVideoId(exerciseData['videoUrl']),
-          'embedUrl': exerciseData['videoUrl'],
+          'videoId': _extractYouTubeVideoId(videoUrl),
+          'embedUrl': videoUrl,
           'thumbnailUrl': _generateYouTubeThumbnail(
-            _extractYouTubeVideoId(exerciseData['videoUrl']),
+            _extractYouTubeVideoId(videoUrl),
           ),
           'canPlayInApp': true,
         },
@@ -218,6 +292,14 @@ String _extractYouTubeVideoId(String videoUrl) {
   return videoUrl;
 }
 
+String? _tryExtractYouTubeId(String url) {
+  try {
+    return _extractYouTubeVideoId(url);
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Generate YouTube thumbnail URL from video ID
 String _generateYouTubeThumbnail(String videoId) {
   // Try multiple thumbnail formats in order of preference
@@ -226,6 +308,13 @@ String _generateYouTubeThumbnail(String videoId) {
   // mqdefault.jpg (320x180) - medium quality fallback
   // default.jpg (120x90) - always available
   return "https://img.youtube.com/vi/$videoId/hqdefault.jpg";
+}
+
+// Very lightweight meta content extractor (best-effort)
+String? _matchMetaContent(String html, String property) {
+  final regex = RegExp('<meta[^>]+property=["\']$property["\'][^>]*content=["\']([^"\']+)["\']', caseSensitive: false);
+  final m = regex.firstMatch(html);
+  return m?.group(1);
 }
 
 /// Create workout steps from exercise data
@@ -275,9 +364,107 @@ class UploadExercisesScreen extends StatelessWidget {
       body: Center(
         child: ElevatedButton(
           onPressed: () async {
-            await uploadExercisesToFirestore();
+            await uploadExercisesFromJson('assets/data/workouts.json');
           },
           child: const Text('Upload Exercises to Firestore'),
+        ),
+      ),
+    );
+  }
+}
+
+class UploadBrowserScreen extends StatefulWidget {
+  final bool localOnly; // when true: import URL returns Exercise locally, no cloud write
+  const UploadBrowserScreen({super.key, this.localOnly = false});
+
+  @override
+  State<UploadBrowserScreen> createState() => _UploadBrowserScreenState();
+}
+
+class _UploadBrowserScreenState extends State<UploadBrowserScreen> {
+  bool _isUploading = false;
+  String? _status;
+  final TextEditingController _urlCtrl = TextEditingController();
+
+  Future<void> _importFile(String assetPath) async {
+    setState(() {
+      _isUploading = true;
+      _status = 'Uploading ' + assetPath + ' ...';
+    });
+    try {
+      await uploadExercisesFromJson(assetPath);
+      setState(() {
+        _status = 'Uploaded successfully!';
+      });
+    } catch (e) {
+      setState(() {
+        _status = 'Error: ' + e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Import Workouts')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // URL input (Local only)
+            TextField(
+              controller: _urlCtrl,
+              decoration: const InputDecoration(
+                hintText: 'Paste workout URL (YouTube or article)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.link),
+              ),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _isUploading
+                  ? null
+                  : () async {
+                      final url = _urlCtrl.text.trim();
+                      if (url.isEmpty) return;
+                      setState(() {
+                        _isUploading = true;
+                        _status = 'Importing from ' + url + ' ...';
+                      });
+                      try {
+                        if (widget.localOnly) {
+                          final ex = await parseExerciseFromUrl(url);
+                          if (mounted) Navigator.pop(context, ex);
+                          return;
+                        } else {
+                          await uploadWorkoutFromUrl(url);
+                        }
+                        setState(() => _status = 'Imported successfully!');
+                      } catch (e) {
+                        setState(() => _status = 'Error: ' + e.toString());
+                      } finally {
+                        if (mounted) setState(() => _isUploading = false);
+                      }
+                    },
+              icon: const Icon(Icons.download, color: Colors.white),
+              label: const Text('Import URL (local only)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            // Cloud import removed from this screen to avoid duplicate entry points.
+            if (_status != null) ...[
+              const SizedBox(height: 12),
+              Text(_status!),
+            ],
+          ],
         ),
       ),
     );

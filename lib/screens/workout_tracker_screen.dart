@@ -30,6 +30,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
   List<Map<String, dynamic>> _tips = [];
   List<Exercise> _favorites = [];
   List<Exercise> _history = [];
+  final List<Exercise> _custom = [];
 
   bool _isLoading = true;
   String _searchQuery = '';
@@ -48,7 +49,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadData();
   }
 
@@ -113,12 +114,65 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
     });
     _filterWorkouts();
   }
+  
+  Future<void> _showImportMenu() async {
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.link),
+                title: const Text('Import from URL (local only)'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final ex = await Navigator.of(context).push<Exercise>(
+                    MaterialPageRoute(
+                      builder: (_) => const UploadBrowserScreen(localOnly: true),
+                    ),
+                  );
+                  if (ex != null) _addCustomWorkout(ex);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.cloud_download),
+                title: const Text('Import from Cloud'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  // Fetch from Firestore and copy locally to Custom list
+                  final all = await _exerciseService.getAllWorkouts();
+                  if (!mounted) return;
+                  setState(() {
+                    _custom
+                      ..clear()
+                      ..addAll(all);
+                  });
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   void _onCategoryChanged(String category) {
     setState(() {
       _selectedCategory = category;
     });
     _filterWorkouts();
+  }
+
+  // Add a locally imported custom workout (not persisted to Firestore)
+  void _addCustomWorkout(Exercise ex) {
+    setState(() {
+      _custom.insert(0, ex);
+    });
   }
 
   Future<void> _cleanupOldSampleData() async {
@@ -143,63 +197,64 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
   }
 
   Future<void> _uploadSampleWorkouts() async {
-    try {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(
-                'Cleaning up old data and uploading fresh workouts...',
-                style: TextStyle(color: TColor.black),
-                textAlign: TextAlign.center,
+    // Open import browser so user can choose which JSON to import
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const UploadBrowserScreen()),
+    );
+    // After import, reload data
+    if (mounted) await _loadData();
+  }
+
+  Widget _buildCustomTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          if (_custom.isEmpty)
+            Center(
+              child: Column(
+                children: [
+                  Icon(Icons.collections_bookmark, size: 64, color: TColor.gray),
+                  const SizedBox(height: 8),
+                  Text('No custom workouts yet', style: TextStyle(color: TColor.gray)),
+                ],
               ),
-            ],
-          ),
-        ),
-      );
-
-      // Step 1: Cleanup old data
-      await _cleanupOldSampleData();
-
-      // Step 2: Upload fresh data
-      await uploadExercisesToFirestore();
-
-      // Close loading dialog
-      if (mounted) Navigator.pop(context);
-
-      // Reload data to show new workouts
-      await _loadData();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              '✅ Fresh sample workouts uploaded with working video thumbnails!',
+            )
+          else
+            Column(
+              children: _custom.map((w) {
+                return Dismissible(
+                  key: ValueKey('custom-' + w.id),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    color: Colors.red,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: const Icon(Icons.delete, color: Colors.white),
+                  ),
+                  onDismissed: (_) {
+                    setState(() => _custom.remove(w));
+                  },
+                  child: WorkoutRow(
+                    wObj: {
+                      'name': w.name,
+                      'image': w.displayImage,
+                      'kcal': (w.calories ?? 0).toString(),
+                      'time': (w.duration ?? 0).toString(),
+                      'progress': 0.0,
+                      'id': w.id,
+                    },
+                    onPressed: () => _navigateToWorkoutDetail(w),
+                  ),
+                );
+              }).toList(),
             ),
-            backgroundColor: TColor.primaryColor1,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      // Close loading dialog if still open
-      if (mounted) Navigator.pop(context);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error uploading workouts: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+        ],
+      ),
+    );
   }
 
   Future<void> _clearHistory() async {
@@ -307,8 +362,8 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
         actions: [
           IconButton(
             icon: Icon(Icons.upload, color: TColor.primaryColor1),
-            onPressed: _uploadSampleWorkouts,
-            tooltip: 'Upload Sample Workouts',
+            onPressed: _showImportMenu,
+            tooltip: 'Import',
           ),
           IconButton(
             icon: Icon(Icons.clear, color: TColor.primaryColor1),
@@ -316,31 +371,36 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
             tooltip: 'Clear History',
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: TColor.primaryColor1,
-          unselectedLabelColor: SettingsHelper.getSecondaryTextColor(context),
-          indicatorColor: TColor.primaryColor1,
-          tabs: [
-            Tab(
-              child: Text(
-                "Workouts",
-                style: SettingsHelper.getTextStyle(context, fontSize: 14),
-              ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(1.0), // fixed, not affected by global scaling
             ),
-            Tab(
-              child: Text(
-                "Favorites",
-                style: SettingsHelper.getTextStyle(context, fontSize: 14),
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: false,
+              labelColor: TColor.primaryColor1,
+              unselectedLabelColor:
+                  SettingsHelper.getSecondaryTextColor(context),
+              indicatorColor: TColor.primaryColor1,
+              labelStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
-            ),
-            Tab(
-              child: Text(
-                "History",
-                style: SettingsHelper.getTextStyle(context, fontSize: 14),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+              tabs: const [
+                Tab(text: "Workouts"),
+                Tab(text: "Favorites"),
+                Tab(text: "History"),
+                Tab(text: "Custom"),
+              ],
             ),
-          ],
+          ),
         ),
       ),
       body: Column(
@@ -447,6 +507,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                 _buildWorkoutsTab(),
                 _buildFavoritesTab(),
                 _buildHistoryTab(),
+                _buildCustomTab(),
               ],
             ),
           ),

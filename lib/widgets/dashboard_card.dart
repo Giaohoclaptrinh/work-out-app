@@ -25,96 +25,135 @@ class DashboardCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        // Chiều cao được control bởi mainAxisExtent ở Grid → không cần minHeight to
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Hàng icon + progress ring (nhỏ để nhường chỗ chữ)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(icon, color: color, size: 20),
-                if (progress > 0)
-                  SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: CircularProgressIndicator(
-                      value: progress.clamp(0.0, 1.0),
-                      strokeWidth: 4,
-                      backgroundColor: color.withOpacity(0.15),
-                      valueColor: AlwaysStoppedAnimation<Color>(color),
-                    ),
-                  ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final availableH = constraints.maxHeight.isFinite
+              ? constraints.maxHeight
+              : 9999.0;
+          final ultraCompact = availableH < 120;
+          final compact = !ultraCompact && availableH < 140;
+
+          final double ringSize = ultraCompact ? 24 : (compact ? 28 : 40);
+          final double valueFs = ultraCompact ? 20 : (compact ? 22 : 28);
+          final double titleFs = ultraCompact ? 11 : (compact ? 12 : 14);
+          final double topGap = ultraCompact ? 4 : (compact ? 6 : 8);
+          final double midGap = ultraCompact ? 4 : (compact ? 4 : 6);
+          final double paddingAll = ultraCompact ? 6 : (compact ? 8 : 12);
+          final double stroke = ultraCompact ? 2.5 : (compact ? 3 : 4);
+
+          return Container(
+            padding: EdgeInsets.all(paddingAll),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
               ],
             ),
-            const SizedBox(height: 8),
-
-            // Value + unit (canh baseline, FittedBox để không tràn)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
+                // Hàng icon + progress ring (co giãn theo chiều cao khả dụng)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Icon(icon, color: color, size: 20),
+                    if (progress > 0)
+                      SizedBox(
+                        width: ringSize,
+                        height: ringSize,
+                        child: CircularProgressIndicator(
+                          value: progress.clamp(0.0, 1.0),
+                          strokeWidth: stroke,
+                          backgroundColor: color.withOpacity(0.15),
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                        ),
+                      ),
+                  ],
+                ),
+                SizedBox(height: topGap),
+
+                // Value + unit (được ràng chiều cao để tránh overflow theo chiều dọc)
+                _ClampTextScale(
+                  maxScale: 1.08,
+                  child: SizedBox(
+                    height: valueFs * 1.10, // khớp với công thức tính chiều cao
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            value,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: valueFs,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            unit,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: ultraCompact ? 11 : (compact ? 12 : 13),
+                              color: TColor.gray,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
+
+                SizedBox(height: midGap),
+
+                // Title (tự động rút xuống 1 dòng nếu không gian thấp)
                 Text(
-                  unit,
-                  maxLines: 1,
+                  title,
+                  maxLines: compact ? 1 : 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 13,
-                    color: TColor.gray,
-                    fontWeight: FontWeight.w500,
+                    fontSize: titleFs,
+                    height: 1.05,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
                   ),
                 ),
               ],
             ),
-
-            const SizedBox(height: 6),
-
-            // Title 2 dòng, line-height thấp để gọn chiều cao
-            Text(
-              title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 14, // <-- bạn muốn 14
-                height: 1.05, // <-- giảm line-height để không bị overflow
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
+    );
+  }
+}
+
+class _ClampTextScale extends StatelessWidget {
+  final double maxScale;
+  final Widget child;
+
+  const _ClampTextScale({required this.maxScale, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final s = mq.textScaler.scale(1.0);
+    final clamped = s > maxScale ? maxScale : s;
+    return MediaQuery(
+      data: mq.copyWith(textScaler: TextScaler.linear(clamped)),
+      child: child,
     );
   }
 }

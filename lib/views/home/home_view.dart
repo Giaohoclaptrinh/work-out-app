@@ -19,7 +19,6 @@ import '../../widgets/exercises_row.dart';
 import '../../widgets/dashboard_card.dart';
 import '../../services/workout_service.dart';
 import '../../services/notification_service.dart';
-import '../../services/daily_stats_service.dart';
 import '../../screens/bmi_chart_screen.dart';
 import '../../utils/debug_helper.dart';
 import '../../utils/settings_helper.dart';
@@ -37,7 +36,6 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   final DashboardService _dashboardService = DashboardService();
   final NotificationService _notificationService = NotificationService();
-  final DailyStatsService _dailyStatsService = DailyStatsService();
   DashboardData? _dashboardData;
   bool _isLoading = true;
   Map<String, dynamic>? _userData;
@@ -184,14 +182,7 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                 ),
               ),
               const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: _autoLogDailyStats,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                child: const Text(
-                  'Auto-Log Daily Stats',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
+             
               const SizedBox(height: 10),
               Expanded(
                 child: notificationsArr.isEmpty
@@ -301,25 +292,7 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _autoLogDailyStats() async {
-    try {
-      await _dailyStatsService.autoLogTodayStats();
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Daily stats logged successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      DebugHelper.logError('Error auto-logging daily stats: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
-    }
-  }
+  // Removed auto-log daily stats feature (button and handler)
 
   Future<void> _markNotificationAsRead(String notificationId) async {
     await _notificationService.markNotificationAsRead(notificationId);

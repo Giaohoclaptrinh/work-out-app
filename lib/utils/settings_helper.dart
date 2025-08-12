@@ -644,8 +644,7 @@ class SettingsHelper {
         if (context != null) {
           final fontSize = getFontSize(context);
           if (fontSize > 16) {
-            childAspectRatio *=
-                1.1; // Slight increase for larger fonts (max 16)
+            childAspectRatio *= 1.1; // Slight increase for larger fonts (max 16)
           } else if (fontSize < 12) {
             childAspectRatio *= 0.9; // Slight decrease for smaller fonts
           }
@@ -946,7 +945,8 @@ class SettingsHelper {
                 ring: 40,
               );
               // giữ trong khoảng an toàn để đẹp mắt
-              final itemH = baseH.clamp(132.0, 176.0).toDouble();
+              // Nới thấp nhất để tránh overflow trên màn rất hẹp
+              final itemH = baseH.clamp(120.0, 176.0).toDouble();
 
               return GridView.builder(
                 shrinkWrap: true,
@@ -976,12 +976,16 @@ class SettingsHelper {
     double titleFs = 14, // font size của tiêu đề (2 dòng)
     bool twoLineTitle = true,
     double ring = 40, // đường kính progress ring
-    double verticalGaps = 12 + 8 + 6 + 8, // padding + các SizedBox
+    // Tính gap thực tế: padding trên (12) + khoảng cách sau icon (8) + giữa value-title (6) + padding dưới (12)
+    double verticalGaps = 12 + 8 + 6 + 12,
+    // Đồng bộ với _ClampTextScale để tránh sai khác giữa chiều cao tính toán và text scale thực tế
+    double maxScale = 1.08,
   }) {
     final scale = MediaQuery.textScaleFactorOf(context);
-    const topRowH = 40.0; // hàng icon + ring
-    final valueH = valueFs * 1.10 * scale;
-    final titleH = titleFs * 1.05 * scale * (twoLineTitle ? 2 : 1);
+    final effectiveScale = scale > maxScale ? maxScale : scale;
+    final topRowH = ring >= 40 ? ring : 40.0; // đảm bảo đủ cho vòng tròn tiến độ
+    final valueH = valueFs * 1.10 * effectiveScale;
+    final titleH = titleFs * 1.05 * effectiveScale * (twoLineTitle ? 2 : 1);
     return topRowH + verticalGaps + valueH + titleH;
   }
 }

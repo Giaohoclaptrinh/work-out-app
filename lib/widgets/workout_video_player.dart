@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import '../common/color_extension.dart';
 
 /// --- Utils: extract Youtube videoId from many URL shapes (watch, embed, youtu.be, shorts)
@@ -126,6 +128,9 @@ class _WorkoutVideoPlayerState extends State<WorkoutVideoPlayer> {
   String _videoUrl = '';
   String _videoId = '';
   String _thumbnailUrl = '';
+  bool _useFallback = false;
+  Timer? _readyTimer;
+  WebViewController? _wv;
 
   @override
   void initState() {
@@ -154,17 +159,54 @@ class _WorkoutVideoPlayerState extends State<WorkoutVideoPlayer> {
           playsInline: true, // iOS cần
         ),
       );
+
+      // Prepare WebView controller as a secondary inline fallback for YouTube URLs
+      if (_videoUrl.contains('youtube.') || _videoUrl.contains('youtu.be/')) {
+        final uri = _videoUrl.startsWith('http')
+            ? Uri.parse(_videoUrl)
+            : Uri.parse('https://www.youtube.com/watch?v=$_videoId');
+        _wv = WebViewController()
+          ..setJavaScriptMode(JavaScriptMode.unrestricted)
+          ..loadRequest(uri);
+      }
+
+      // Nếu player không ready trong thời gian ngắn → fallback mở ngoài
+      _readyTimer = Timer(const Duration(seconds: 2), () {
+        if (mounted && (_videoId.isEmpty || _yt.value.playerState == PlayerState.unknown)) {
+          setState(() => _useFallback = true);
+        }
+      });
     } catch (e) {
       debugPrint('Error initializing video player: $e');
       // Tạo controller rỗng để tránh null
       _yt = YoutubePlayerController.fromVideoId(videoId: '');
+      _useFallback = true;
     }
   }
 
   @override
   void dispose() {
     _yt.close();
+    _readyTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _openExternal() async {
+    final id = extractYoutubeId(_videoUrl);
+    try {
+      if (id.isNotEmpty) {
+        final app = Uri.parse('youtube://watch?v=$id');
+        if (await canLaunchUrl(app)) {
+          await launchUrl(app, mode: LaunchMode.externalApplication);
+          return;
+        }
+        final web = Uri.parse('https://www.youtube.com/watch?v=$id');
+        await launchUrl(web, mode: LaunchMode.externalApplication);
+      } else {
+        final uri = Uri.parse(_videoUrl);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
   }
 
   @override
@@ -189,9 +231,11 @@ class _WorkoutVideoPlayerState extends State<WorkoutVideoPlayer> {
             // Video area
             AspectRatio(
               aspectRatio: 16 / 9,
-              child: _videoId.isNotEmpty
+              child: (!_useFallback && _videoId.isNotEmpty)
                   ? YoutubePlayer(controller: _yt)
-                  : _FallbackOpenExternal(
+                  : (_wv != null)
+                      ? WebViewWidget(controller: _wv!)
+                      : _FallbackOpenExternal(
                       title: widget.workout['title'] ?? 'Workout Video',
                       thumbnailUrl: _thumbnailUrl,
                       rawUrl: _videoUrl,
@@ -260,8 +304,10 @@ class _WorkoutVideoPlayerState extends State<WorkoutVideoPlayer> {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        if (_videoId.isEmpty) return;
-                        // Gọi play qua API; nếu bị chặn do policy, user vẫn có thể bấm Play thủ công
+                        if (_useFallback || _videoId.isEmpty) {
+                          _openExternal();
+                          return;
+                        }
                         _yt.playVideo();
                       },
                       icon: const Icon(Icons.play_arrow, color: Colors.white),

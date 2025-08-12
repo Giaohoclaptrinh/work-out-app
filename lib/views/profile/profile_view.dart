@@ -789,48 +789,63 @@ class _ProfileViewState extends State<ProfileView> {
                   ),
                   const SizedBox(height: 15),
 
-                  // Height - Weight - Age
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TitleSubtitleCell(
-                          title: SettingsHelper.formatHeight(
-                            context,
-                            (user['height'] ?? 180).toDouble(),
+                  // Height - Weight - Age (đồng bộ kích thước)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isNarrow = constraints.maxWidth < 360;
+                      final itemMinHeight = isNarrow ? 80.0 : 96.0;
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: TitleSubtitleCell(
+                              minHeight: itemMinHeight,
+                              title: SettingsHelper.formatHeight(
+                                context,
+                                (user['height'] ?? 180).toDouble(),
+                              ),
+                              subtitle: "Height",
+                              titleColor:
+                                  SettingsHelper.getPrimaryColor(context),
+                              subtitleColor:
+                                  SettingsHelper.getSecondaryTextColor(
+                                context,
+                              ),
+                            ),
                           ),
-                          subtitle: "Height",
-                          titleColor: SettingsHelper.getPrimaryColor(context),
-                          subtitleColor: SettingsHelper.getSecondaryTextColor(
-                            context,
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: TitleSubtitleCell(
+                              minHeight: itemMinHeight,
+                              title: SettingsHelper.formatWeight(
+                                context,
+                                (user['weight'] ?? 65).toDouble(),
+                              ),
+                              subtitle: "Weight",
+                              titleColor:
+                                  SettingsHelper.getPrimaryColor(context),
+                              subtitleColor:
+                                  SettingsHelper.getSecondaryTextColor(
+                                context,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: TitleSubtitleCell(
-                          title: SettingsHelper.formatWeight(
-                            context,
-                            (user['weight'] ?? 65).toDouble(),
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: TitleSubtitleCell(
+                              minHeight: itemMinHeight,
+                              title: "${user['age'] ?? '22'}yo",
+                              subtitle: "Age",
+                              titleColor:
+                                  SettingsHelper.getPrimaryColor(context),
+                              subtitleColor:
+                                  SettingsHelper.getSecondaryTextColor(
+                                context,
+                              ),
+                            ),
                           ),
-                          subtitle: "Weight",
-                          titleColor: SettingsHelper.getPrimaryColor(context),
-                          subtitleColor: SettingsHelper.getSecondaryTextColor(
-                            context,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: TitleSubtitleCell(
-                          title: "${user['age'] ?? '22'}yo",
-                          subtitle: "Age",
-                          titleColor: SettingsHelper.getPrimaryColor(context),
-                          subtitleColor: SettingsHelper.getSecondaryTextColor(
-                            context,
-                          ),
-                        ),
-                      ),
-                    ],
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 25),
 

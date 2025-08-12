@@ -408,11 +408,11 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          'Chưa có món nào',
+                                          'No meal yet',
                                           style: TextStyle(
                                             color: TColor.gray,
                                             fontSize: 16,
-                                          ),
+                                          ), 
                                         ),
                                       ],
                                     ),

@@ -8,6 +8,7 @@ class TitleSubtitleCell extends StatelessWidget {
   final String subtitle;
   final Color? titleColor;
   final Color? subtitleColor;
+  final double minHeight;
 
   const TitleSubtitleCell({
     super.key,
@@ -15,12 +16,14 @@ class TitleSubtitleCell extends StatelessWidget {
     required this.subtitle,
     this.titleColor,
     this.subtitleColor,
+    this.minHeight = 90,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 8),
+      constraints: BoxConstraints(minHeight: minHeight),
       decoration: BoxDecoration(
         color: SettingsHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(15),
@@ -37,31 +40,62 @@ class TitleSubtitleCell extends StatelessWidget {
         ],
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            title,
-            style: SettingsHelper.getTitleStyle(
-              context,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: titleColor ?? SettingsHelper.getTextColor(context),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Text(
+              title,
+              style: SettingsHelper.getTitleStyle(
+                context,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: titleColor ?? SettingsHelper.getTextColor(context),
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
             ),
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: SettingsHelper.getSubtitleStyle(
-              context,
-              fontSize: 14,
-              color:
-                  subtitleColor ??
-                  SettingsHelper.getSecondaryTextColor(context),
+          _ClampTextScale(
+            maxScale: 1.08,
+            child: Text(
+              subtitle,
+              style: SettingsHelper.getSubtitleStyle(
+                context,
+                fontSize: 14,
+                color:
+                    subtitleColor ??
+                    SettingsHelper.getSecondaryTextColor(context),
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ClampTextScale extends StatelessWidget {
+  final double maxScale;
+  final Widget child;
+
+  const _ClampTextScale({required this.maxScale, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final s = mq.textScaler.scale(1.0);
+    final clamped = s > maxScale ? maxScale : s;
+    return MediaQuery(
+      data: mq.copyWith(textScaler: TextScaler.linear(clamped)),
+      child: child,
     );
   }
 }
