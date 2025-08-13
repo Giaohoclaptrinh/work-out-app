@@ -154,15 +154,6 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                   _uploadWorkoutData();
                 },
               ),
-
-              ListTile(
-                leading: const Icon(Icons.add),
-                title: const Text('Create Custom Workout'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  _showCreateWorkoutDialog();
-                },
-              ),
               ListTile(
                 leading: const Icon(Icons.play_circle),
                 title: const Text('Import from YouTube'),
@@ -171,7 +162,6 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                   _showYouTubeInputDialog();
                 },
               ),
-
               ListTile(
                 leading: const Icon(Icons.cloud_download),
                 title: const Text('Import from Cloud'),
@@ -185,14 +175,6 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                       ..clear()
                       ..addAll(mine);
                   });
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.cloud_sync),
-                title: const Text('Import Workouts from Firebase'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  _importWorkoutsFromFirebase();
                 },
               ),
             ],
@@ -278,6 +260,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
     }
   }
 
+  // Removed entry point from UI. Keeping method for potential future reuse.
   void _showCreateWorkoutDialog() {
     final TextEditingController nameController = TextEditingController();
     final TextEditingController descriptionController = TextEditingController();
@@ -694,13 +677,27 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Creating workout from YouTube...'),
-            ],
+        builder: (context) => AlertDialog(
+          content: SizedBox(
+            width: 280,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Creating workout from YouTube...',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -720,16 +717,15 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
         throw Exception('Invalid YouTube URL format');
       }
 
-      // Create YouTube thumbnail URL
-      final thumbnailUrl =
-          'https://img.youtube.com/vi/$videoId/maxresdefault.jpg';
+      // Create YouTube thumbnail URL (use hqdefault for better availability)
+      final thumbnailUrl = 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
 
       // Create embedded video URL for WebView
       final embeddedUrl = 'https://www.youtube.com/embed/$videoId';
 
       // Create Exercise object from YouTube video
       final exercise = Exercise(
-        id: 'youtube_${DateTime.now().millisecondsSinceEpoch}',
+        id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
         name: title,
         description: description,
         category: category,
@@ -742,7 +738,7 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
         calories: calories,
         steps: null,
         isFavorite: false,
-        type: 'youtube',
+        type: 'custom',
         workout: {
           'name': title,
           'description': description,
@@ -755,6 +751,9 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
           'thumbnailUrl': thumbnailUrl,
         },
       );
+
+      // Save to user's customWorkouts in Firestore
+      await ExerciseService().saveCustomWorkout(exercise);
 
       setState(() {
         _custom.add(exercise);
@@ -822,6 +821,54 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: const Icon(Icons.delete, color: Colors.white),
                   ),
+                  confirmDismiss: (_) async {
+                    // Ask user whether to delete from Cloud as well
+                    final choice = await showModalBottomSheet<String>(
+                      context: context,
+                      builder: (ctx) => SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.delete_outline),
+                              title: const Text('Remove locally'),
+                              onTap: () => Navigator.pop(ctx, 'local'),
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.cloud_off),
+                              title: const Text('Delete from Cloud (Firebase)'),
+                              onTap: () => Navigator.pop(ctx, 'cloud'),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                        ),
+                      ),
+                    );
+
+                    if (choice == 'cloud') {
+                      try {
+                        await ExerciseService().deleteCustomWorkout(w.id);
+                        if (!mounted) return true;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Deleted from Cloud'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      } catch (e) {
+                        if (!mounted) return false;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Delete failed: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return false;
+                      }
+                    }
+
+                    return true; // proceed with local removal
+                  },
                   onDismissed: (_) {
                     setState(() => _custom.remove(w));
                   },
@@ -1291,7 +1338,61 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
   }
 
   void _navigateToWorkoutDetail(Exercise workout) {
-    // Convert Exercise to Workout for the detail screen
+    // Convert Exercise to Workout for the detail screen with safe step mapping & fallbacks
+    List<workout_model.WorkoutStep> mappedSteps = [];
+    if (workout.steps != null && workout.steps!.isNotEmpty) {
+      mappedSteps = workout.steps!
+          .map((s) => workout_model.WorkoutStep(
+                stepNumber: s.stepNumber,
+                title: s.title,
+                description: s.description,
+                image: s.image,
+                duration: s.duration,
+                reps: s.reps,
+                sets: s.sets,
+              ))
+          .toList();
+    } else {
+      // Fallback minimal flow for YouTube/custom imports
+      final int mainDuration = (workout.duration ?? 10) * 60;
+      mappedSteps = [
+        workout_model.WorkoutStep(
+          stepNumber: 1,
+          title: 'Warm-up',
+          description: 'Light warm-up and stretching',
+          image: workout.imageUrl,
+          duration: 120,
+        ),
+        workout_model.WorkoutStep(
+          stepNumber: 2,
+          title: workout.name,
+          description: workout.description,
+          image: workout.imageUrl,
+          duration: mainDuration > 0 ? mainDuration : 600,
+          reps: 12,
+          sets: 1,
+        ),
+        workout_model.WorkoutStep(
+          stepNumber: 3,
+          title: 'Cool Down',
+          description: 'Breathing and stretching',
+          image: workout.imageUrl,
+          duration: 120,
+        ),
+      ];
+    }
+
+    final String? videoUrl = () {
+      // Prefer explicit workout.videoUrl if present, else from workout.workout map
+      if (workout.workout != null && workout.workout!['videoUrl'] is String) {
+        return workout.workout!['videoUrl'] as String;
+      }
+      if (workout.additionalData != null && workout.additionalData!['videoUrl'] is String) {
+        return workout.additionalData!['videoUrl'] as String;
+      }
+      return null;
+    }();
+
     final workoutData = workout_model.Workout(
       id: workout.id,
       name: workout.name,
@@ -1302,10 +1403,10 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
       calories: workout.calories ?? 0,
       difficulty: workout.difficulty,
       muscleGroups: workout.muscleGroups,
-      steps: workout.steps?.cast<workout_model.WorkoutStep>() ?? [],
+      steps: mappedSteps,
       isFavorite: workout.isFavorite,
       completedAt: null,
-      videoUrl: workout.workout?['videoUrl'], // Get videoUrl from workout data
+      videoUrl: videoUrl,
       equipment: workout.equipment,
     );
 

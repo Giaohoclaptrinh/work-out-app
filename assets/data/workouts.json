@@ -4,6 +4,7 @@
     {
       "title": "Push-Up",
       "muscleGroup": "Chest",
+      "difficulty": "Beginner",
       "videoUrl": "https://www.youtube.com/embed/IODxDxX7oi4",
       "thumbnail": "https://img.youtube.com/vi/IODxDxX7oi4/maxresdefault.jpg",
       "description": "The push-up is a fundamental bodyweight exercise that strengthens the chest, triceps, and shoulders. Begin in a high plank position with your hands slightly wider than shoulder-width apart. Lower your body until your chest is just above the ground, then push yourself back up. Keep your core tight and body aligned throughout the movement. For beginners, you can perform push-ups on your knees or against a wall to build strength.",
@@ -12,6 +13,7 @@
     {
       "title": "Bodyweight Squat",
       "muscleGroup": "Legs",
+      "difficulty": "Beginner",
       "videoUrl": "https://www.youtube.com/embed/aclHkVaku9U",
       "thumbnail": "https://img.youtube.com/vi/aclHkVaku9U/0.jpg",
       "description": "Bodyweight squats are a lower-body exercise that strengthens the quads, hamstrings, glutes, and calves. Stand with your feet shoulder-width apart, lower your hips back and down as if sitting into a chair, then return to standing. Keep your chest lifted and knees aligned with your toes. Focus on controlled movement and a full range of motion.",
@@ -20,6 +22,7 @@
     {
       "title": "Plank",
       "muscleGroup": "Core",
+      "difficulty": "Beginner",
       "videoUrl": "https://www.youtube.com/embed/pSHjTRCQxIw",
       "thumbnail": "https://img.youtube.com/vi/pSHjTRCQxIw/hqdefault.jpg",
       "description": "The plank is an excellent exercise for strengthening your entire core, including your abs, obliques, and lower back. Start in a push-up position, then lower onto your forearms, keeping your body in a straight line from head to heels. Engage your core and avoid letting your hips sag or rise too high. Hold this position for as long as you can maintain proper form.",
@@ -28,6 +31,7 @@
     {
       "title": "Lunges",
       "muscleGroup": "Legs",
+      "difficulty": "Intermediate",
       "videoUrl": "https://www.youtube.com/embed/D7KaRcUTQeE",
       "thumbnail": "https://img.youtube.com/vi/D7KaRcUTQeE/hqdefault.jpg",
       "description": "Lunges are a fantastic exercise for building lower body strength and improving balance. Stand with your feet hip-width apart. Step forward with one leg, lowering your hips until both knees are bent at approximately a 90-degree angle. Ensure your front knee is directly above your ankle and your back knee hovers just above the ground. Push off your front foot to return to the starting position and alternate legs.",
@@ -36,6 +40,7 @@
     {
       "title": "Dumbbell Row",
       "muscleGroup": "Back",
+      "difficulty": "Intermediate",
       "videoUrl": "https://www.youtube.com/embed/6TSP1TRMUzs",
       "thumbnail": "https://img.youtube.com/vi/6TSP1TRMUzs/hqdefault.jpg",
       "description": "The dumbbell row targets your back muscles, particularly the lats, and also works your biceps. Place one hand and one knee on a bench for support, keeping your back flat. With a dumbbell in your free hand, pull the weight up towards your chest, squeezing your shoulder blade. Lower the dumbbell with control. This exercise helps improve posture and upper body pulling strength.",
@@ -44,6 +49,7 @@
     {
       "title": "Overhead Press (Dumbbell)",
       "muscleGroup": "Shoulders",
+      "difficulty": "Intermediate",
       "videoUrl": "https://www.youtube.com/embed/qEwKCR5JCog",
       "thumbnail": "https://img.youtube.com/vi/qEwKCR5JCog/hqdefault.jpg",
       "description": "The dumbbell overhead press is a great exercise for building strong shoulders and triceps. Sit or stand with a dumbbell in each hand at shoulder height, palms facing forward. Press the dumbbells directly overhead until your arms are fully extended, but don't lock your elbows. Slowly lower the dumbbells back to the starting position. Keep your core engaged to protect your lower back.",
@@ -52,6 +58,7 @@
     {
       "title": "Bicep Curl (Dumbbell)",
       "muscleGroup": "Biceps",
+      "difficulty": "Beginner",
       "videoUrl": "https://www.youtube.com/embed/ykJmrZ5v0Oo",
       "thumbnail": "https://img.youtube.com/vi/ykJmrZ5v0Oo/hqdefault.jpg",
       "description": "The dumbbell bicep curl is a classic exercise for isolating and strengthening the biceps. Stand or sit with a dumbbell in each hand, palms facing forward. Keeping your elbows tucked close to your body, curl the dumbbells up towards your shoulders. Squeeze your biceps at the top of the movement, then slowly lower the weights back down. Avoid swinging your body to lift the weights.",
@@ -60,6 +67,7 @@
     {
       "title": "Triceps Extension (Overhead Dumbbell)",
       "muscleGroup": "Triceps",
+      "difficulty": "Intermediate",
       "videoUrl": "https://www.youtube.com/embed/_gsUck-7M74",
       "thumbnail": "https://img.youtube.com/vi/_gsUck-7M74/hqdefault.jpg",
       "description": "The overhead dumbbell triceps extension effectively targets all three heads of the triceps. Hold one dumbbell with both hands and extend it overhead. Keeping your elbows close to your head, slowly lower the dumbbell behind you by bending your elbows. Extend your arms back up to the starting position, feeling the contraction in your triceps. Maintain a stable core throughout the exercise.",
@@ -68,6 +76,7 @@
     {
       "title": "Glute Bridge",
       "muscleGroup": "Glutes",
+      "difficulty": "Beginner",
       "videoUrl": "https://www.youtube.com/embed/OUgsJ8-Vi0E",
       "thumbnail": "https://img.youtube.com/vi/OUgsJ8-Vi0E/hqdefault.jpg",
       "description": "The glute bridge is a simple yet effective exercise for strengthening the glutes and hamstrings, and it's great for beginners. Lie on your back with your knees bent and feet flat on the floor, hip-width apart. Press through your heels to lift your hips off the ground until your body forms a straight line from your shoulders to your knees. Squeeze your glutes at the top, then slowly lower back down.",
@@ -76,10 +85,101 @@
     {
       "title": "Bird-Dog",
       "muscleGroup": "Core, Back",
+      "difficulty": "Beginner",
       "videoUrl": "https://www.youtube.com/embed/wqzrb67Dwf8",
       "thumbnail": "https://img.youtube.com/vi/wqzrb67Dwf8/hqdefault.jpg",
       "description": "The bird-dog is a fantastic exercise for improving core stability, balance, and strengthening the lower back. Start on all fours, with your hands directly under your shoulders and knees under your hips. Slowly extend one arm straight forward and the opposite leg straight back, keeping your core tight and hips level. Hold briefly, then return to the starting position and alternate sides. Focus on controlled movement and avoiding any rocking.",
       "equipment": "Bodyweight"
+    },
+    {
+      "title": "Mountain Climbers",
+      "muscleGroup": "Cardio",
+      "difficulty": "Intermediate",
+      "videoUrl": "https://www.youtube.com/embed/cnyTQDSE884",
+      "thumbnail": "https://img.youtube.com/vi/cnyTQDSE884/hqdefault.jpg",
+      "description": "Full-body cardio move to raise heart rate and engage core.",
+      "equipment": "Bodyweight"
+    },
+    {
+      "title": "Burpees",
+      "muscleGroup": "Cardio",
+      "difficulty": "Advanced",
+      "videoUrl": "https://www.youtube.com/embed/dZgVxmf6jkA",
+      "thumbnail": "https://img.youtube.com/vi/dZgVxmf6jkA/hqdefault.jpg",
+      "description": "Explosive full-body exercise building endurance and power.",
+      "equipment": "Bodyweight"
+    },
+    {
+      "title": "Jump Squats",
+      "muscleGroup": "Legs",
+      "difficulty": "Intermediate",
+      "videoUrl": "https://www.youtube.com/embed/A-cFYWvaHr0",
+      "thumbnail": "https://img.youtube.com/vi/A-cFYWvaHr0/hqdefault.jpg",
+      "description": "Plyometric variation of squats to develop power.",
+      "equipment": "Bodyweight"
+    },
+    {
+      "title": "Russian Twists",
+      "muscleGroup": "Core",
+      "difficulty": "Beginner",
+      "videoUrl": "https://www.youtube.com/embed/wkD8rjkodUI",
+      "thumbnail": "https://img.youtube.com/vi/wkD8rjkodUI/hqdefault.jpg",
+      "description": "Rotational core move targeting obliques.",
+      "equipment": "Bodyweight"
+    },
+    {
+      "title": "Dead Bug",
+      "muscleGroup": "Core",
+      "difficulty": "Beginner",
+      "videoUrl": "https://www.youtube.com/watch?v=mUMVASv0x7U",
+      "thumbnail": "https://img.youtube.com/vi/mUMVASv0x7U/hqdefault.jpg",
+      "description": "Core stability drill to improve spinal control.",
+      "equipment": "Bodyweight"
+    },
+    {
+      "title": "Dumbbell Bench Press",
+      "muscleGroup": "Chest",
+      "difficulty": "Intermediate",
+      "videoUrl": "https://www.youtube.com/embed/4T9UQ4FBVXI",
+      "thumbnail": "https://img.youtube.com/vi/4T9UQ4FBVXI/hqdefault.jpg",
+      "description": "Classic chest builder with dumbbells for stability challenge.",
+      "equipment": "Dumbbell, Bench"
+    },
+    {
+      "title": "Lat Pulldown",
+      "muscleGroup": "Back",
+      "difficulty": "Intermediate",
+      "videoUrl": "https://www.youtube.com/embed/CAwf7n6Luuc",
+      "thumbnail": "https://img.youtube.com/vi/CAwf7n6Luuc/hqdefault.jpg",
+      "description": "Vertical pulling movement targeting lats.",
+      "equipment": "Machine"
+    },
+    {
+      "title": "Seated Cable Row",
+      "muscleGroup": "Back",
+      "difficulty": "Intermediate",
+      "videoUrl": "https://www.youtube.com/embed/GZbfZ033f74",
+      "thumbnail": "https://img.youtube.com/vi/GZbfZ033f74/hqdefault.jpg",
+      "description": "Horizontal pulling movement for the mid-back.",
+      "equipment": "Cable Machine"
+    },
+    {
+      "title": "Hip Thrust",
+      "muscleGroup": "Glutes",
+      "difficulty": "Intermediate",
+      "videoUrl": "https://www.youtube.com/watch?v=pUdIL5x0fWg",
+      "thumbnail": "https://img.youtube.com/vi/pUdIL5x0fWg/hqdefault.jpg",
+      "description": "Glute-focused lift increasing posterior chain strength.",
+      "equipment": "Barbell, Bench"
+    },
+    {
+      "title": "Shoulder Lateral Raise",
+      "muscleGroup": "Shoulders",
+      "difficulty": "Beginner",
+      "videoUrl": "https://www.youtube.com/embed/3VcKaXpzqRo",
+      "thumbnail": "https://img.youtube.com/vi/3VcKaXpzqRo/hqdefault.jpg",
+      "description": "Isolation move to build medial delts.",
+      "equipment": "Dumbbell"
     }
   ]
 }

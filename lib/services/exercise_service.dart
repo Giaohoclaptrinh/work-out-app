@@ -190,6 +190,18 @@ class ExerciseService {
           .collection('customWorkouts')
           .doc(exercise.id);
 
+      // Normalize fields to match required schema
+      final String? videoUrl =
+          (exercise.workout?['videoUrl'] as String?) ??
+          (exercise.additionalData?['videoUrl'] as String?);
+      final String? youtubeId = (exercise.workout?['youtubeId'] as String?) ??
+          _extractYoutubeId(videoUrl);
+      final String? thumbnailUrl =
+          (exercise.workout?['thumbnailUrl'] as String?) ?? exercise.imageUrl;
+      final String image = exercise.imageUrl ?? thumbnailUrl ?? '';
+      final List<String> muscleGroups =
+          exercise.muscleGroups.isNotEmpty ? exercise.muscleGroups : [exercise.category];
+
       await docRef.set({
         'name': exercise.name,
         'description': exercise.description,
@@ -213,6 +225,40 @@ class ExerciseService {
     } catch (e) {
       throw Exception('Failed to save custom workout: $e');
     }
+  }
+
+  /// Delete a user's custom workout from Firestore
+  Future<void> deleteCustomWorkout(String workoutId) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('customWorkouts')
+          .doc(workoutId)
+          .delete();
+    } catch (e) {
+      throw Exception('Failed to delete custom workout: $e');
+    }
+  }
+
+  String? _extractYoutubeId(String? url) {
+    if (url == null || url.isEmpty) return null;
+    try {
+      if (url.contains('/embed/')) {
+        return url.split('/embed/')[1].split('?')[0];
+      }
+      if (url.contains('v=')) {
+        return url.split('v=')[1].split('&')[0];
+      }
+      if (url.contains('youtu.be/')) {
+        return url.split('youtu.be/')[1].split('?')[0];
+      }
+    } catch (_) {}
+    return null;
   }
 
   /// Get user's custom workouts

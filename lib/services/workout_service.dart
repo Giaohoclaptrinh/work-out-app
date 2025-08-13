@@ -270,17 +270,34 @@ class WorkoutService {
               .toList();
         }
 
+        // Normalize videoUrl and thumbnail from video ID (ignore query params)
+        String rawUrl = (workout['videoUrl'] ?? '').toString().trim();
+        String videoId = '';
+        if (rawUrl.contains('/embed/')) {
+          videoId = rawUrl.split('/embed/')[1].split('?')[0];
+        } else if (rawUrl.contains('watch?v=')) {
+          videoId = rawUrl.split('watch?v=')[1].split('&')[0];
+        } else if (rawUrl.contains('youtu.be/')) {
+          videoId = rawUrl.split('youtu.be/')[1].split('?')[0];
+        }
+        final normalizedThumb = videoId.isNotEmpty
+            ? 'https://img.youtube.com/vi/$videoId/hqdefault.jpg'
+            : (workout['thumbnail'] ?? '');
+        final normalizedVideoUrl = videoId.isNotEmpty
+            ? 'https://www.youtube.com/watch?v=$videoId'
+            : rawUrl;
+
         final workoutData = {
           'id': 'workout_${i + 1}',
           'name': workout['title'],
           'description': workout['description'],
           'category': workout['muscleGroup'],
-          'image': workout['thumbnail'],
-          'videoUrl': workout['videoUrl'],
+          'image': normalizedThumb,
+          'videoUrl': normalizedVideoUrl,
           'equipment': workout['equipment'],
           'calories': 150 + (i * 10), // Random calories
           'duration': 10 + (i * 2), // Random duration in minutes
-          'difficulty': 'Intermediate',
+          'difficulty': workout['difficulty'] ?? 'Intermediate',
           'muscleGroups': [workout['muscleGroup']], // Convert to list
           'steps': steps,
           'isFavorite': false,

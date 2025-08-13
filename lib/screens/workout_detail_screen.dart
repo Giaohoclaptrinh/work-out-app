@@ -322,8 +322,10 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Equipment
-                  if (widget.workout.equipment != null) ...[
+                  // Equipment (hide if empty or only bodyweight)
+                  if ((widget.workout.equipment?.trim().isNotEmpty ?? false) &&
+                      (widget.workout.equipment!.trim().toLowerCase() != 'bodyweight') &&
+                      (widget.workout.equipment!.trim().toLowerCase() != 'none')) ...[
                     Text(
                       'Equipment Needed',
                       style: TextStyle(
