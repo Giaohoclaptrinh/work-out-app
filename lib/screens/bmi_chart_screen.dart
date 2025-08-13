@@ -4,6 +4,7 @@ import '../common/color_extension.dart';
 import '../services/daily_stats_service.dart';
 import '../utils/debug_helper.dart';
 import '../utils/settings_helper.dart';
+import '../widgets/top_notification_banner.dart';
 
 class BMIChartScreen extends StatefulWidget {
   const BMIChartScreen({super.key});
@@ -666,17 +667,22 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
       await _loadData();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Today\'s stats logged successfully!'),
-          backgroundColor: Colors.green,
-        ),
+      showTopBanner(
+        context,
+        title: 'Daily Stats',
+        message: 'Today\'s stats logged successfully!',
+        backgroundColor: Colors.green,
+        icon: Icons.check_circle_outline,
       );
     } catch (e) {
       DebugHelper.logError('Error logging today stats: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      showTopBanner(
+        context,
+        title: 'Error',
+        message: 'Error: $e',
+        backgroundColor: Colors.red,
+        icon: Icons.error_outline,
       );
     }
   }

@@ -4,6 +4,7 @@ import '../common/color_extension.dart';
 import '../models/workout.dart';
 import '../services/exercise_service.dart';
 import '../widgets/round_button.dart';
+import '../widgets/top_notification_banner.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
   final Workout workout;
@@ -51,11 +52,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         widget.workout.videoUrl!.isEmpty ||
         (!widget.workout.videoUrl!.startsWith('http://') &&
             !widget.workout.videoUrl!.startsWith('https://'))) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No video available for this workout'),
-          backgroundColor: Colors.orange,
-        ),
+      showTopBanner(
+        context,
+        title: 'No Video',
+        message: 'No video available for this workout',
+        backgroundColor: Colors.orange,
+        icon: Icons.warning_amber_rounded,
       );
       return;
     }
@@ -146,23 +148,24 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+        showTopBanner(
+          context,
+          title: _isFavorite ? 'Favorites' : 'Favorites',
+          message:
               _isFavorite ? 'Added to favorites!' : 'Removed from favorites!',
-            ),
-            backgroundColor: _isFavorite ? Colors.green : Colors.orange,
-          ),
+          backgroundColor: _isFavorite ? Colors.green : Colors.orange,
+          icon: _isFavorite ? Icons.favorite : Icons.favorite_border,
         );
       }
     } catch (e) {
       // swallow
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating favorites: $e'),
-            backgroundColor: Colors.red,
-          ),
+        showTopBanner(
+          context,
+          title: 'Error',
+          message: 'Error updating favorites: $e',
+          backgroundColor: Colors.red,
+          icon: Icons.error_outline,
         );
       }
     }
@@ -413,13 +416,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                           );
 
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Workout completed! Added to history.',
-                                ),
-                                backgroundColor: Colors.green,
-                              ),
+                            showTopBanner(
+                              context,
+                              title: 'Workout',
+                              message: 'Workout completed! Added to history.',
+                              backgroundColor: Colors.green,
+                              icon: Icons.check_circle_outline,
                             );
 
                             // Return true to refresh the workout list
@@ -427,11 +429,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                           }
                         } catch (e) {
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error completing workout: $e'),
-                                backgroundColor: Colors.red,
-                              ),
+                            showTopBanner(
+                              context,
+                              title: 'Error',
+                              message: 'Error completing workout: $e',
+                              backgroundColor: Colors.red,
+                              icon: Icons.error_outline,
                             );
                           }
                         }

@@ -14,6 +14,7 @@ import '../widgets/what_train_row.dart';
 import '../services/workout_service.dart';
 import 'workout_detail_screen.dart';
 import '../utils/settings_helper.dart';
+import '../widgets/top_notification_banner.dart';
 
 class WorkoutTrackerScreen extends StatefulWidget {
   const WorkoutTrackerScreen({super.key});
@@ -188,22 +189,24 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
     try {
       await _workoutService.uploadWorkoutDataFromJson();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Workout data uploaded successfully!'),
-            backgroundColor: Colors.green,
-          ),
+        showTopBanner(
+          context,
+          title: 'Workouts',
+          message: 'Workout data uploaded successfully!',
+          backgroundColor: Colors.green,
+          icon: Icons.check_circle_outline,
         );
         // Reload data
         _loadData();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error uploading workout data: $e'),
-            backgroundColor: Colors.red,
-          ),
+        showTopBanner(
+          context,
+          title: 'Error',
+          message: 'Error uploading workout data: $e',
+          backgroundColor: Colors.red,
+          icon: Icons.error_outline,
         );
       }
     }
@@ -239,22 +242,22 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
           }
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Imported ${workouts.length} workouts from Firebase!',
-            ),
-            backgroundColor: Colors.green,
-          ),
+        showTopBanner(
+          context,
+          title: 'Workouts',
+          message: 'Imported ${workouts.length} workouts from Firebase!',
+          backgroundColor: Colors.green,
+          icon: Icons.cloud_download,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error importing workouts: $e'),
-            backgroundColor: Colors.red,
-          ),
+        showTopBanner(
+          context,
+          title: 'Error',
+          message: 'Error importing workouts: $e',
+          backgroundColor: Colors.red,
+          icon: Icons.error_outline,
         );
       }
     }
@@ -398,11 +401,12 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
               final youtubeUrl = youtubeUrlController.text.trim();
 
               if (name.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a workout name'),
-                    backgroundColor: Colors.orange,
-                  ),
+                showTopBanner(
+                  context,
+                  title: 'Validation',
+                  message: 'Please enter a workout name',
+                  backgroundColor: Colors.orange,
+                  icon: Icons.warning_amber_rounded,
                 );
                 return;
               }
@@ -626,21 +630,23 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
               final calories = int.tryParse(caloriesController.text) ?? 100;
 
               if (url.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a YouTube URL'),
-                    backgroundColor: Colors.orange,
-                  ),
+                showTopBanner(
+                  context,
+                  title: 'Validation',
+                  message: 'Please enter a YouTube URL',
+                  backgroundColor: Colors.orange,
+                  icon: Icons.warning_amber_rounded,
                 );
                 return;
               }
 
               if (title.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a workout title'),
-                    backgroundColor: Colors.orange,
-                  ),
+                showTopBanner(
+                  context,
+                  title: 'Validation',
+                  message: 'Please enter a workout title',
+                  backgroundColor: Colors.orange,
+                  icon: Icons.warning_amber_rounded,
                 );
                 return;
               }
@@ -762,23 +768,24 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Successfully created workout from YouTube: $title'),
-            backgroundColor: Colors.green,
-          ),
+        showTopBanner(
+          context,
+          title: 'Workouts',
+          message: 'Successfully created workout from YouTube: $title',
+          backgroundColor: Colors.green,
+          icon: Icons.check_circle_outline,
         );
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error creating workout from YouTube: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
+        showTopBanner(
+          context,
+          title: 'Error',
+          message: 'Error creating workout from YouTube: $e',
+          backgroundColor: Colors.red,
+          icon: Icons.error_outline,
         );
       }
     }
@@ -849,19 +856,21 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
                       try {
                         await ExerciseService().deleteCustomWorkout(w.id);
                         if (!mounted) return true;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Deleted from Cloud'),
-                            backgroundColor: Colors.orange,
-                          ),
+                        showTopBanner(
+                          context,
+                          title: 'Workouts',
+                          message: 'Deleted from Cloud',
+                          backgroundColor: Colors.orange,
+                          icon: Icons.cloud_off,
                         );
                       } catch (e) {
                         if (!mounted) return false;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Delete failed: $e'),
-                            backgroundColor: Colors.red,
-                          ),
+                        showTopBanner(
+                          context,
+                          title: 'Error',
+                          message: 'Delete failed: $e',
+                          backgroundColor: Colors.red,
+                          icon: Icons.error_outline,
                         );
                         return false;
                       }
@@ -897,20 +906,22 @@ class _WorkoutTrackerScreenState extends State<WorkoutTrackerScreen>
       await _loadData();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Workout history cleared!'),
-            backgroundColor: Colors.orange,
-          ),
+        showTopBanner(
+          context,
+          title: 'Workouts',
+          message: 'Workout history cleared!',
+          backgroundColor: Colors.orange,
+          icon: Icons.delete_outline,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error clearing history: $e'),
-            backgroundColor: Colors.red,
-          ),
+        showTopBanner(
+          context,
+          title: 'Error',
+          message: 'Error clearing history: $e',
+          backgroundColor: Colors.red,
+          icon: Icons.error_outline,
         );
       }
     }

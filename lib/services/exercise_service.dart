@@ -13,15 +13,7 @@ class ExerciseService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final CaloriesTrackerService _caloriesTracker = CaloriesTrackerService();
 
-  /// Get all exercises
-  Future<List<Exercise>> getAllExercises() async {
-    try {
-      final snapshot = await _firestore.collection('exercises').get();
-      return snapshot.docs.map(_documentToExercise).toList();
-    } catch (e) {
-      throw Exception('Failed to get exercises: $e');
-    }
-  }
+  
 
   /// Get all workouts from workouts collection
   Future<List<Exercise>> getAllWorkouts() async {
@@ -169,7 +161,7 @@ class ExerciseService {
       return snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
-        return data;
+        return data; 
       }).toList();
     } catch (e) {
       throw Exception('Failed to get workout tips: $e');

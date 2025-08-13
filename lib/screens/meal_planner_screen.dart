@@ -8,6 +8,7 @@ import '../widgets/round_button.dart';
 import '../widgets/meal_row.dart';
 import '../widgets/meal_category_cell.dart';
 import '../widgets/find_eat_cell.dart';
+import '../widgets/top_notification_banner.dart';
 
 class MealPlannerScreen extends StatefulWidget {
   const MealPlannerScreen({super.key});
@@ -165,11 +166,12 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
     _loadData();
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Đã thêm ${meal.name} vào ${_categoryNames[category]}'),
-          backgroundColor: Colors.green,
-        ),
+      showTopBanner(
+        context,
+        title: 'Meal Planner',
+        message: 'Đã thêm ${meal.name} vào ${_categoryNames[category]}',
+        backgroundColor: Colors.green,
+        icon: Icons.check_circle_outline,
       );
     }
   }
@@ -179,11 +181,12 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
     _loadData();
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đã xóa món ăn khỏi kế hoạch'),
-          backgroundColor: Colors.orange,
-        ),
+      showTopBanner(
+        context,
+        title: 'Meal Planner',
+        message: 'Đã xóa món ăn khỏi kế hoạch',
+        backgroundColor: Colors.orange,
+        icon: Icons.info_outline,
       );
     }
   }
@@ -194,20 +197,22 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
       await _loadData();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sample meals imported successfully!'),
-            backgroundColor: Colors.green,
-          ),
+        showTopBanner(
+          context,
+          title: 'Meal Planner',
+          message: 'Sample meals imported successfully!',
+          backgroundColor: Colors.green,
+          icon: Icons.check_circle_outline,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error importing meals: $e'),
-            backgroundColor: Colors.red,
-          ),
+        showTopBanner(
+          context,
+          title: 'Error',
+          message: 'Error importing meals: $e',
+          backgroundColor: Colors.red,
+          icon: Icons.error_outline,
         );
       }
     }

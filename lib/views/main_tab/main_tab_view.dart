@@ -10,6 +10,7 @@ import '../../services/exercise_service.dart';
 import '../../models/exercise.dart';
 import '../../models/workout.dart' as workout_model;
 import '../../screens/workout_detail_screen.dart';
+import '../../widgets/top_notification_banner.dart';
 
 class MainTabView extends StatefulWidget {
   const MainTabView({super.key});
@@ -217,20 +218,21 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
         _searchResults = results;
         _isLoading = false;
       });
-    } catch (e) {
+      } catch (e) {
       setState(() {
         _searchResults = [];
         _isLoading = false;
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Search failed: $e'),
+        if (mounted) {
+          showTopBanner(
+            context,
+            title: 'Search',
+            message: 'Search failed: $e',
             backgroundColor: Colors.red,
-          ),
-        );
-      }
+            icon: Icons.error_outline,
+          );
+        }
     }
   }
 

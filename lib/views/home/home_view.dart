@@ -21,6 +21,7 @@ import '../../services/notification_service.dart';
 import '../../screens/bmi_chart_screen.dart';
 import '../../utils/debug_helper.dart';
 import '../../utils/settings_helper.dart';
+import '../../widgets/top_notification_banner.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -167,19 +168,6 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
           height: 400,
           child: Column(
             children: [
-              ElevatedButton(
-                onPressed: _addTestNotification,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: TColor.primaryColor1,
-                ),
-                child: const Text(
-                  'Add Test Notification',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              const SizedBox(height: 10),
               Expanded(
                 child: notificationsArr.isEmpty
                     ? Center(
@@ -258,36 +246,6 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     );
   }
 
-  Future<void> _addTestNotification() async {
-    try {
-      await _notificationService.addNotification(
-        'Welcome!',
-        'Thank you for using our fitness app. Start your workout journey today!',
-        type: 'welcome',
-      );
-      await _notificationService.addActivity(
-        'Account Created',
-        'Your fitness account has been successfully created',
-        type: 'account',
-      );
-      await _loadRealData();
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Test notification added!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      DebugHelper.logError('Error adding test notification: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
-    }
-  }
-
   // Removed auto-log daily stats feature (button and handler)
 
   Future<void> _markNotificationAsRead(String notificationId) async {
@@ -343,11 +301,12 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
         );
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to load dashboard data: $e'),
-          backgroundColor: Colors.red,
-        ),
+      showTopBanner(
+        context,
+        title: 'Failed to load',
+        message: 'Failed to load dashboard data: $e',
+        backgroundColor: Colors.red,
+        icon: Icons.error_outline,
       );
     }
   }

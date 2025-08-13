@@ -24,6 +24,8 @@ import '../../services/exercise_service.dart';
 import '../../services/cache_service.dart';
 import '../../models/dashboard_data.dart';
 import '../../utils/debug_helper.dart';
+import '../../widgets/top_notification_banner.dart';
+import '../../providers/settings_provider.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -33,7 +35,6 @@ class ProfileView extends StatefulWidget {
 }
 
 class _ProfileViewState extends State<ProfileView> {
-  bool positive = false;
   bool _disposed = false;
   final NotificationService _notificationService = NotificationService();
   final ExerciseService _exerciseService = ExerciseService();
@@ -284,12 +285,13 @@ class _ProfileViewState extends State<ProfileView> {
     );
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: TColor.primaryColor1,
-          duration: const Duration(seconds: 2),
-        ),
+      showTopBanner(
+        context,
+        title: 'Profile',
+        message: message,
+        backgroundColor: TColor.primaryColor1,
+        icon: Icons.info_outline,
+        duration: const Duration(seconds: 2),
       );
     }
   }
@@ -988,7 +990,7 @@ class _ProfileViewState extends State<ProfileView> {
                                 ),
                               ),
                               CustomAnimatedToggleSwitch<bool>(
-                                current: positive,
+                                current: context.watch<SettingsProvider>().pushNotifications,
                                 values: [false, true],
                                 indicatorSize: Size.square(30.0),
                                 animationDuration: const Duration(
@@ -996,17 +998,13 @@ class _ProfileViewState extends State<ProfileView> {
                                 ),
                                 animationCurve: Curves.linear,
                                 onChanged: (b) {
-                                  if (!_disposed) {
-                                    setState(() => positive = b);
-                                  }
+                                  context.read<SettingsProvider>().togglePushNotifications();
                                 },
                                 iconBuilder: (context, local, global) {
                                   return const SizedBox();
                                 },
                                 onTap: (b) {
-                                  if (!_disposed) {
-                                    setState(() => positive = !positive);
-                                  }
+                                  context.read<SettingsProvider>().togglePushNotifications();
                                 },
                                 iconsTappable: false,
                                 wrapperBuilder: (context, global, child) {
