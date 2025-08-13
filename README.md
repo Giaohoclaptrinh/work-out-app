@@ -1,192 +1,77 @@
-# Fitness Tracker App - 3-in-1 Complete Solution
+# Workout App
 
-A comprehensive Flutter-based fitness application inspired by the [fitness_workout_app_flutter_3_ui](https://github.com/codeforany/fitness_workout_app_flutter_3_ui) repository. This app combines workout tracking, meal planning, and sleep monitoring in one beautiful interface.
+Flutter fitness app with workouts, custom routines, and integrations for meals and sleep. Focus areas updated: YouTube import → Custom Workouts per user, Cloud import/export, safer UI on small screens.
 
-## 🏋️ Features
+## Features
 
-### **🏠 Home Dashboard**
-- **BMI Calculator**: Visual pie chart showing body mass index
-- **Activity Progress**: Interactive line charts with touch feedback
-- **Today's Target**: Quick access to daily goals
-- **Latest Workouts**: Progress tracking with completion indicators
-- **Welcome Screen**: Personalized greeting with statistics
+- **Workout tabs**: Workouts, Favorites, History, Custom
+- **Import menu (AppBar)**:
+  - Import from YouTube: save to `users/{uid}/customWorkouts`
+  - Import from Cloud: fetch your `customWorkouts` and copy to local Custom tab
+  - Delete on swipe: choose Remove locally or Delete from Cloud
+- **Details screen**: video preview (WebView/YouTube), calories, minutes, level; hides Equipment if Bodyweight/None
+- **JSON upload**: add core workouts from `assets/data/workouts.json` (with difficulty)
 
-### **💪 Workout Tracker**
-- **Exercise Library**: Comprehensive database with instructions
-- **Progress Tracking**: Visual progress indicators and charts
-- **Workout Scheduling**: Calendar integration for planning
-- **Activity History**: Track completed workouts and performance
-- **Custom Routines**: Create and manage personalized workout plans
-
-### **🍽️ Meal Planner**
-- **Nutrition Charts**: Daily calorie tracking with line graphs
-- **Meal Categories**: Breakfast, lunch, dinner, and snacks organization
-- **Food Database**: Detailed nutritional information
-- **Meal Scheduling**: Plan meals throughout the day
-- **Calorie Counter**: Track daily nutritional intake
-
-### **😴 Sleep Tracker**
-- **Sleep Quality Charts**: Visual sleep pattern analysis
-- **Sleep Schedule**: Bedtime and wake-up alarm management
-- **Deep Sleep Tracking**: Monitor sleep phases and quality
-- **Sleep Statistics**: Duration and quality metrics
-- **Smart Alarms**: Intelligent wake-up timing
-
-### **👤 Profile Management**
-- **Personal Data**: Height, weight, age tracking
-- **Achievement System**: Progress milestones and rewards
-- **Activity History**: Complete fitness journey overview
-- **Settings**: Customizable app preferences
-- **Notifications**: Smart reminders and alerts
-
-## 📁 Project Structure
+## Structure
 
 ```
 lib/
-├── main.dart                    # App entry point
-├── common/                      # Shared utilities
-│   ├── color_extension.dart    # App color scheme and themes
-│   └── common_widgets.dart     # Reusable UI components
-├── models/                      # Data models
-│   ├── exercise.dart           # Exercise model and sample data
-│   └── workout.dart            # Workout and WorkoutSet models
-├── screens/                    # UI screens (main app screens)
-│   ├── auth_screen.dart        # Authentication
-│   ├── workout_tracker_screen.dart  # Fitness tracking (used in main nav)
-│   ├── meal_planner_screen.dart     # Nutrition planning (used in main nav)
-│   ├── workout_list_screen.dart     # Workout list
-│   ├── workout_detail_screen.dart   # Workout details
-│   └── onboarding_screen.dart       # User onboarding
-└── views/                      # UI views organized by feature
-    ├── main_tab/               # Bottom navigation
-    │   └── main_tab_view.dart  # Main tab controller
-    ├── home/                   # Dashboard
-    │   └── home_view.dart      # Home screen with charts
-    ├── profile/                # User management
-    │   └── profile_view.dart   # Profile screen
-    └── body_data_input_screen.dart # Body data input
+  common/           # colors, helpers
+  models/           # exercise.dart, workout.dart
+  screens/          # workout_tracker_screen.dart, workout_detail_screen.dart, ...
+  services/         # exercise_service.dart, workout_service.dart, ...
+  widgets/          # reusable UI (WorkoutRow, DashboardCard, ...)
+assets/
+  data/workouts.json
 ```
-
-## 🎨 **UI/UX Design**
-
-### **Modern Design System**
-- **Gradient Themes**: Beautiful color gradients for each feature
-- **Interactive Charts**: Touch-responsive data visualization
-- **Bottom Navigation**: Smooth animated tab switching
-- **Card-based Layout**: Clean, organized information display
-- **Consistent Typography**: Professional font hierarchy
-
-### **Color Scheme**
-- **Primary**: Blue gradient (`#92A3FD` → `#9DCEFF`)
-- **Secondary**: Purple gradient (`#C58BF2` → `#EEA4CE`)
-- **Workout**: Red theme (`#FF6B6B`)
-- **Meal**: Teal theme (`#4ECDC4`)
-- **Sleep**: Purple theme (`#667eea`)
 
 ## Getting Started
 
-### **Prerequisites**
+Prerequisites
+- Flutter 3.32.x (stable)
+- Xcode 16.4+ (iOS)
 
-- **Flutter SDK**: 3.32.5 or later
-- **Xcode**: 16.4+ (for iOS development)
-- **iOS Simulator**: iPhone 16 Pro or similar
-- **Physical iOS Device**: iOS 18.5+ (optional)
-
-### **Dependencies**
-
-```yaml
-dependencies:
-  flutter: sdk: flutter
-  cupertino_icons: ^1.0.8
-  fl_chart: ^0.69.0                    # Interactive charts
-  table_calendar: ^3.1.2              # Calendar widgets
-  intl: ^0.19.0                        # Internationalization
-  animated_bottom_navigation_bar: ^1.3.3  # Bottom navigation
-  percent_indicator: ^4.2.3            # Progress indicators
-  provider: ^6.1.2                     # State management
+Run
+```bash
+cd work-out-app
+flutter pub get
+flutter run -d "iPhone 16"
 ```
 
-### **Installation**
+## Data: JSON schema (assets/data/workouts.json)
 
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd fitness-tracker-app
-   ```
+```json
+{
+  "workouts": [
+    {
+      "title": "Push-Up",
+      "muscleGroup": "Chest",
+      "difficulty": "Beginner",
+      "videoUrl": "https://www.youtube.com/watch?v=IODxDxX7oi4",
+      "thumbnail": "https://img.youtube.com/vi/IODxDxX7oi4/hqdefault.jpg",
+      "description": "...",
+      "equipment": "Bodyweight"
+    }
+  ]
+}
+```
 
-2. **Install dependencies:**
-   ```bash
-   flutter pub get
-   ```
+Notes
+- difficulty supported: Beginner | Intermediate | Advanced (defaults to Intermediate if missing)
+- YouTube thumbnails: use `https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg` (fallback `0.jpg` if needed)
 
-3. **Run the app:**
-   ```bash
-   # On iOS simulator (recommended)
-   flutter run -d "iPhone 16 Pro"
-   
-   # On physical iOS device
-   flutter run -d "device-name"
-   
-   # List available devices
-   flutter devices
-   ```
+## Import Workflows
 
-## Development
+- **YouTube**: Import → parse VIDEO_ID → store to `users/{uid}/customWorkouts` with fields (name, description, category, difficulty, duration, calories, equipment, image/thumbnailUrl, muscleGroups, isFavorite, type=custom, videoUrl, youtubeId, createdAt, updatedAt)
+- **Cloud**: Import from Cloud → fetch your `customWorkouts` and copy to local Custom tab
+- **Delete**: swipe in Custom tab → choose Remove locally or Delete from Cloud
 
-### Running the App
+## Troubleshooting
 
-- **Hot Reload**: Save files to see changes instantly
-- **Hot Restart**: Press `R` in terminal for full restart
-- **Debug Mode**: Use `flutter run` for development builds
-
-### Key Components
-
-1. **WorkoutApp**: Main application widget with theme configuration
-2. **WorkoutHomePage**: Dashboard with workout statistics and navigation
-3. **WorkoutListScreen**: Browse available workouts with detailed views
-4. **Exercise & Workout Models**: Data structures for workout management
-
-### Sample Data
-
-The app includes sample workouts and exercises:
-- Upper Body Strength (Push-ups)
-- Lower Body Power (Squats)  
-- Core Blast (Plank)
-
-## Future Enhancements
-
-- [ ] Workout session tracking
-- [ ] Custom workout creation
-- [ ] Progress analytics
-- [ ] Exercise timer
-- [ ] Data persistence
-- [ ] User profiles
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test on iOS devices
-5. Submit a pull request
+- Thumbnail 404: switch to `0.jpg` or ensure VIDEO_ID has no query params
+- RenderFlex overflow: UI clamps text scale and buttons; if seen, reduce global font scale
+- Git commands from root: use `git -C work-out-app <cmd>` or `cd work-out-app`
 
 ## License
 
-This project is licensed under the MIT License.
-
-
-1. auth_screen.dart
-RoundTextField (tạo UI input đẹp hơn cho email, password)
-RoundButton (thay thế nút đăng nhập/đăng ký mặc định)
-SettingRow (nếu có phần chọn đăng nhập bằng mạng xã hội hoặc các lựa chọn khác)
-2. onboarding_screen.dart
-OnBoardingPage (hiển thị từng trang onboarding với hình ảnh, tiêu đề, mô tả)
-RoundButton (nút Next/Get Started)
-TabButton (nếu có tab chuyển đổi giữa các bước)
-3. workout_list_screen.dart
-WorkoutRow (hiển thị từng bài tập trong danh sách)
-UpcomingWorkoutRow (hiển thị các bài tập sắp tới)
-LatestActivityRow (hiển thị hoạt động gần đây)
-PopularMealRow (nếu có phần gợi ý meal liên quan đến workout)
-NotificationRow (hiển thị thông báo liên quan đến workout)
-4. Other screens use various widgets for their specific functionality
+MIT
