@@ -74,4 +74,8 @@ Notes
 
 ## License
 
+<<<<<<< HEAD
 GG
+=======
+GG
+>>>>>>> 0f53aee4e485295a7c216021b8477a02698147be
