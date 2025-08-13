@@ -773,16 +773,14 @@ class _ProfileViewState extends State<ProfileView> {
                         ),
                       ),
                       SizedBox(
-                        width: 70,
-                        height: 25,
+                        width: 72,
+                        height: 28,
                         child: RoundButton(
                           title: "Edit",
                           type: RoundButtonType.bgGradient,
                           fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          onPressed: () {
-                            // TODO: Edit profile
-                          },
+                          fontWeight: FontWeight.w500,
+                          onPressed: () {},
                         ),
                       ),
                     ],

@@ -81,6 +81,8 @@ class DailyStatsService {
       'calories_burned_kcal': caloriesBurnedKcal,
       'calories_consumed_kcal': caloriesConsumedKcal,
       'net_calories_kcal': net,
+      // hiển thị theo unit
+      'weight_display': calcWeight,
       'calorie_per_kg': _caloriePerKg,
       'estimation_method': estimation,
       'notes': notes,
@@ -109,6 +111,16 @@ class DailyStatsService {
       daily['created_at'] = FieldValue.serverTimestamp();
     }
     await dailyRef.set(daily, SetOptions(merge: true));
+
+    // --- Update user's current weight/height to reflect measurement/estimation ---
+    if (calcWeight != null) {
+      await userRef.set({
+        'weight': calcWeight,
+        if (effHeight != null) 'height': effHeight,
+        'weightEstimation': estimation,
+        'weightUpdatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
 
     // charts/bmi_progress: append BMI point if available
     if (bmi != null) {

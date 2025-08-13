@@ -74,30 +74,30 @@ class SettingsHelper {
       Theme.of(context).cardColor;
 
   static Color getTextColor(BuildContext context) {
-    return isDarkMode(context) ? Colors.grey[100]! : Colors.black;
+    return isDarkMode(context) ? const Color(0xFFEDEDED) : Colors.black;
   }
 
   static Color getSecondaryTextColor(BuildContext context) {
-    return isDarkMode(context) ? Colors.grey[400]! : Colors.grey[600]!;
+    return isDarkMode(context) ? const Color(0xFF9AA0A6) : Colors.grey[600]!;
   }
 
   // Additional color helpers for better dark mode experience
   static Color getPrimaryColor(BuildContext context) {
-    return isDarkMode(context) ? Colors.purple[300]! : TColor.primaryColor1;
+    return isDarkMode(context) ? const Color(0xFFB39DDB) : TColor.primaryColor1;
   }
 
   static Color getAccentColor(BuildContext context) {
-    return isDarkMode(context) ? Colors.purple[200]! : TColor.primaryColor2;
+    return isDarkMode(context) ? const Color(0xFFD1C4E9) : TColor.primaryColor2;
   }
 
   static Color getBorderColor(BuildContext context) {
-    return isDarkMode(context) ? Colors.grey[700]! : Colors.grey[300]!;
+    return isDarkMode(context) ? const Color(0xFF2A2A2E) : Colors.grey[300]!;
   }
 
   static Color getShadowColor(BuildContext context) {
     return isDarkMode(context)
-        ? Colors.black.withValues(alpha: 0.3)
-        : Colors.black.withValues(alpha: 0.1);
+        ? Colors.black.withOpacity(0.4)
+        : Colors.black.withOpacity(0.1);
   }
 
   static TextStyle getTextStyle(

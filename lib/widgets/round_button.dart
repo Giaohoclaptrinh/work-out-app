@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:workout_app/common/color_extension.dart';
+import 'package:workout_app/utils/settings_helper.dart';
 
 enum RoundButtonType { bgGradient, bgSGradient, textGradient }
 
@@ -51,7 +52,7 @@ class RoundButton extends StatelessWidget {
         onPressed: onPressed,
         height: 50,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        textColor: TColor.primaryColor1,
+        textColor: SettingsHelper.getPrimaryColor(context),
         minWidth: 0,
         elevation:
             type == RoundButtonType.bgGradient ||
@@ -69,7 +70,7 @@ class RoundButton extends StatelessWidget {
             ? Text(
                 title,
                 style: TextStyle(
-                  color: TColor.white,
+                  color: Colors.white,
                   fontSize: relativeFontSize,
                   fontWeight: fontWeight,
                 ),

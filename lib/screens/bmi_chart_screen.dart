@@ -560,7 +560,9 @@ class _BMIChartScreenState extends State<BMIChartScreen> {
           ),
           Expanded(
             child: Text(
-              weight != null ? '${weight.toStringAsFixed(1)}kg' : 'N/A',
+              weight != null
+                  ? SettingsHelper.formatWeight(context, (weight as num).toDouble())
+                  : 'N/A',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.withValues(alpha: 0.8),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../common/color_extension.dart';
+import '../utils/settings_helper.dart';
 
 class DashboardCard extends StatelessWidget {
   final String title;
@@ -97,7 +98,7 @@ class DashboardCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: valueFs,
                               fontWeight: FontWeight.w700,
-                              color: Colors.black,
+                              color: SettingsHelper.getTextColor(context),
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -107,7 +108,7 @@ class DashboardCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: ultraCompact ? 11 : (compact ? 12 : 13),
-                              color: TColor.gray,
+                              color: SettingsHelper.getSecondaryTextColor(context),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -128,7 +129,7 @@ class DashboardCard extends StatelessWidget {
                     fontSize: titleFs,
                     height: 1.05,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: SettingsHelper.getTextColor(context),
                   ),
                 ),
               ],

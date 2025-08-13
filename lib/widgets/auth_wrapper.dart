@@ -87,12 +87,8 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        // For non-authenticated users, check if they need to see onboarding
-        if (!onboardingService.isOnboardingComplete) {
-          return const OnboardingScreen();
-        }
-
-        return const AuthScreen();
+        // For non-authenticated users, always show onboarding first
+        return const OnboardingScreen();
       },
     );
   }

@@ -74,4 +74,4 @@ Notes
 
 ## License
 
-MIT
+GG

@@ -7,6 +7,7 @@ import 'services/service_provider.dart';
 import 'services/auth_service.dart';
 import 'services/onboarding_service.dart';
 import 'widgets/auth_wrapper.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,6 +66,58 @@ class MyApp extends StatelessWidget {
           final userFontSize = settingsProvider.fontSize;
           final textScaleFactor = userFontSize / baseFontSize;
 
+          final lightTheme = ThemeData(
+            brightness: Brightness.light,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF8E67E4),
+              brightness: Brightness.light,
+            ),
+            primaryColor: const Color(0xFF8E67E4),
+            scaffoldBackgroundColor: Colors.white,
+            cardColor: Colors.white,
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              elevation: 0,
+            ),
+            fontFamily: 'Poppins',
+            textTheme: const TextTheme(
+              bodyLarge: TextStyle(fontSize: 16),
+              bodyMedium: TextStyle(fontSize: 14),
+              bodySmall: TextStyle(fontSize: 12),
+              titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              titleMedium: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              titleSmall: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+          );
+
+          final darkTheme = ThemeData(
+            brightness: Brightness.dark,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFFB39DDB),
+              brightness: Brightness.dark,
+            ),
+            primaryColor: const Color(0xFFB39DDB),
+            scaffoldBackgroundColor: const Color(0xFF0F0F12),
+            cardColor: const Color(0xFF16161A),
+            dividerColor: const Color(0xFF2A2A2E),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF16161A),
+              foregroundColor: Color(0xFFEDEDED),
+              elevation: 0,
+            ),
+            fontFamily: 'Poppins',
+            textTheme: const TextTheme(
+              bodyLarge: TextStyle(fontSize: 16, color: Color(0xFFEDEDED)),
+              bodyMedium: TextStyle(fontSize: 14, color: Color(0xFFB8B8C0)),
+              bodySmall: TextStyle(fontSize: 12, color: Color(0xFF9AA0A6)),
+              titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFFEDEDED)),
+              titleMedium: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFFEDEDED)),
+              titleSmall: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Color(0xFFEDEDED)),
+            ),
+            shadowColor: Colors.black.withOpacity(0.4),
+          );
+
           return MaterialApp(
             title: 'Workout App',
             debugShowCheckedModeBanner: false,
@@ -76,52 +129,11 @@ class MyApp extends StatelessWidget {
                 child: child!,
               );
             },
-            theme: ThemeData(
-              brightness: settingsProvider.isDarkMode
-                  ? Brightness.dark
-                  : Brightness.light,
-              primarySwatch: Colors.purple,
-              primaryColor: Color(0xFF8E67E4),
-              fontFamily: 'Poppins',
-              // Use standard TextTheme without manual fontSize adjustments
-              // Let MediaQuery handle the scaling
-              textTheme: TextTheme(
-                bodyLarge: TextStyle(fontSize: baseFontSize),
-                bodyMedium: TextStyle(fontSize: baseFontSize - 2),
-                bodySmall: TextStyle(fontSize: baseFontSize - 4),
-                titleLarge: TextStyle(
-                  fontSize: baseFontSize + 4,
-                  fontWeight: FontWeight.bold,
-                ),
-                titleMedium: TextStyle(
-                  fontSize: baseFontSize + 2,
-                  fontWeight: FontWeight.w600,
-                ),
-                titleSmall: TextStyle(
-                  fontSize: baseFontSize,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              appBarTheme: AppBarTheme(
-                backgroundColor: settingsProvider.isDarkMode
-                    ? Colors.grey[850]
-                    : Colors.white,
-                foregroundColor: settingsProvider.isDarkMode
-                    ? Colors.grey[100]
-                    : Colors.black,
-                elevation: 0,
-              ),
-              scaffoldBackgroundColor: settingsProvider.isDarkMode
-                  ? Colors.grey[900]
-                  : Colors.white,
-              cardTheme: CardThemeData(
-                color: settingsProvider.isDarkMode
-                    ? Colors.grey[850]
-                    : Colors.white,
-                elevation: 2,
-              ),
-            ),
-            home: const AuthWrapper(),
+            theme: lightTheme,
+            darkTheme: darkTheme,
+            themeMode:
+                settingsProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            home: const SplashScreen(),
           );
         },
       ),

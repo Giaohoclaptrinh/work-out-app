@@ -6,6 +6,7 @@ import '../common/color_extension.dart';
 import '../views/body_data_input_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'auth_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -102,12 +103,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       }
     }
 
-    // Navigate to body data input
+    // Navigate next screen
     if (currentUser != null) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => BodyDataInputScreen(uid: currentUser.uid),
         ),
+      );
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const AuthScreen()),
       );
     }
   }
