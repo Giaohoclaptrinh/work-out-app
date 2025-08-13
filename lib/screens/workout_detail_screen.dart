@@ -5,6 +5,7 @@ import '../models/workout.dart';
 import '../services/exercise_service.dart';
 import '../widgets/round_button.dart';
 import '../widgets/top_notification_banner.dart';
+import '../widgets/step_detail_row.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
   final Workout workout;
@@ -385,6 +386,40 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
+
+                  // Steps
+                  if (widget.workout.steps.isNotEmpty) ...[
+                    Text(
+                      'Workout Steps',
+                      style: TextStyle(
+                        color: TColor.black,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Column(
+                      children: widget.workout.steps
+                          .asMap()
+                          .entries
+                          .map((entry) {
+                        final index = entry.key;
+                        final step = entry.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: StepDetailRow(
+                            sObj: {
+                              'no': step.stepNumber,
+                              'title': step.title,
+                              'detail': step.description,
+                            },
+                            isLast: index == widget.workout.steps.length - 1,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
 
                   // Watch Video Button (if video exists)
                   if (widget.workout.videoUrl != null &&

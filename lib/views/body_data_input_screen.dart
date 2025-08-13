@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../common/color_extension.dart';
 import '../utils/settings_helper.dart';
 import '../widgets/round_button.dart';
+import '../widgets/top_notification_banner.dart';
 
 class BodyDataInputScreen extends StatefulWidget {
   final String uid;
@@ -14,13 +16,21 @@ class BodyDataInputScreen extends StatefulWidget {
 }
 
 class _BodyDataInputScreenState extends State<BodyDataInputScreen> {
-  final _formKey = GlobalKey<FormState>();
+  // Wizard steps
+  int _currentStep = 0;
+  final int _totalSteps = 6; // Goal, Gender, Focus Areas, Age, Height, Weight
+
+  // Collected values
   String? gender;
-  double? height;
-  double? weight;
-  int? age;
+  int age = 25;
+  double heightCm = 170;
+  double weightKg = 65;
   List<String> selectedGoals = [];
+  List<String> selectedFocus = [];
   bool _isLoading = false;
+
+  // Units
+  bool useMetric = true; // true => cm/kg, false => ft/lb
 
   final List<String> availableGoals = [
     'Lose Weight',
@@ -47,179 +57,68 @@ class _BodyDataInputScreenState extends State<BodyDataInputScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(24),
+              // Header with progress
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.arrow_back_ios, size: 20),
-                      ),
+                      onPressed: () {
+                        if (_currentStep == 0) {
+                          Navigator.pop(context);
+                        } else {
+                          setState(() => _currentStep -= 1);
+                        }
+                      },
+                      icon: const Icon(Icons.arrow_back_ios, size: 20),
                     ),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Text(
-                        'Complete Your Profile',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ),
+                    Expanded(child: _buildProgressBar()),
+                    const SizedBox(width: 40),
                   ],
                 ),
               ),
 
-              // Form content
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Welcome message
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: TColor.primaryG),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: TColor.primaryColor1.withOpacity(0.3),
-                                blurRadius: 15,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.person_add,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Let\'s Get Started!',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'Poppins',
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'Help us personalize your experience',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 14,
-                                        fontFamily: 'Poppins',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ..._buildStepContent(),
+                    ],
+                  ),
+                ),
+              ),
 
-                        const SizedBox(height: 32),
-
-                        // Gender selection
-                        _buildSectionTitle('Gender'),
-                        const SizedBox(height: 12),
-                        _buildGenderSelector(),
-
-                        const SizedBox(height: 24),
-
-                        // Basic measurements
-                        _buildSectionTitle('Basic Measurements'),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildInputField(
-                                'Height (${SettingsHelper.getUnits(context) == 'Imperial' ? 'ft/in' : 'cm'})',
-                                Icons.height,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildInputField(
-                                'Weight (${SettingsHelper.getUnits(context) == 'Imperial' ? 'lbs' : 'kg'})',
-                                Icons.monitor_weight,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 16),
-                        _buildInputField('Age', Icons.cake),
-
-                        const SizedBox(height: 32),
-
-                        // Goals selection
-                        _buildSectionTitle('Your Fitness Goals'),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Select all that apply:',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                            fontFamily: 'Poppins',
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildGoalsGrid(),
-
-                        const SizedBox(height: 40),
-
-                        // Submit button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: RoundButton(
-                            title: _isLoading
-                                ? 'Saving...'
-                                : 'Complete Profile',
-                            type: RoundButtonType.bgGradient,
-                            onPressed: _isLoading ? () {} : _submitForm,
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-                      ],
-                    ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: RoundButton(
+                    title: _currentStep == _totalSteps - 1
+                        ? (_isLoading ? 'Saving...' : 'Continue')
+                        : 'Continue',
+                    type: RoundButtonType.bgGradient,
+                    onPressed: _isLoading
+                        ? () {}
+                        : () {
+                            if (_currentStep < _totalSteps - 1) {
+                              if (_canProceed()) {
+                                setState(() => _currentStep += 1);
+                              } else {
+                                showTopBanner(
+                                  context,
+                                  title: 'Incomplete',
+                                  message: 'Please complete this step to continue',
+                                  backgroundColor: Colors.orange,
+                                  icon: Icons.warning_amber_rounded,
+                                );
+                              }
+                            } else {
+                              _submitForm();
+                            }
+                          },
                   ),
                 ),
               ),
@@ -242,85 +141,286 @@ class _BodyDataInputScreenState extends State<BodyDataInputScreen> {
     );
   }
 
-  Widget _buildGenderSelector() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: DropdownButtonFormField<String>(
-        decoration: const InputDecoration(
-          labelText: 'Select your gender',
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
-        value: gender,
-        items: ['Male', 'Female', 'Other']
-            .map(
-              (label) => DropdownMenuItem(
-                value: label,
-                child: Text(
-                  label,
-                  style: const TextStyle(fontFamily: 'Poppins'),
-                ),
+  // ---------- Step UI ----------
+  Widget _buildProgressBar() {
+    return SizedBox(
+      height: 8,
+      child: Row(
+        children: List.generate(_totalSteps, (i) {
+          final active = i <= _currentStep;
+          return Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: active
+                    ? TColor.primaryColor1
+                    : Colors.grey.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(4),
               ),
-            )
-            .toList(),
-        onChanged: (value) => setState(() => gender = value),
-        validator: (value) => value == null ? 'Please select gender' : null,
-        icon: const Icon(Icons.keyboard_arrow_down),
+            ),
+          );
+        }),
       ),
     );
   }
 
-  Widget _buildInputField(String label, IconData icon) {
+  List<Widget> _buildStepContent() {
+    switch (_currentStep) {
+      case 0:
+        return _stepGoal();
+      case 1:
+        return _stepGender();
+      case 2:
+        return _stepFocusAreas();
+      case 3:
+        return _stepAge();
+      case 4:
+        return _stepHeight();
+      case 5:
+      default:
+        return _stepWeight();
+    }
+  }
+
+  List<Widget> _stepGoal() {
+    return [
+      _heroTitle("What's your fitness goal?", 'Your goal is our roadmap, let\'s make it happen!'),
+      const SizedBox(height: 20),
+      _buildGoalsGrid(),
+    ];
+  }
+
+  List<Widget> _stepGender() {
+    return [
+      _heroTitle('Let\'s Start with the Basics',
+          'We\'ll tailor your plan based on your gender for better result'),
+      const SizedBox(height: 12),
+      _pillOption('Male', gender == 'Male', () => setState(() => gender = 'Male')),
+      const SizedBox(height: 12),
+      _pillOption('Female', gender == 'Female', () => setState(() => gender = 'Female')),
+      const SizedBox(height: 12),
+      _pillOption('Prefer not to say', gender == 'Other', () => setState(() => gender = 'Other')),
+    ];
+  }
+
+  List<Widget> _stepFocusAreas() {
+    final areas = ['Whole Body', 'Back', 'Chest', 'Arm', 'Abs', 'Butt', 'Leg'];
+    return [
+      _heroTitle('Which areas do you want to focus on?',
+          'Select the target area for more accurate course recommendations'),
+      const SizedBox(height: 12),
+      Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: areas.map((a) {
+          final sel = selectedFocus.contains(a);
+          return ChoiceChip(
+            label: Text(a),
+            selected: sel,
+            onSelected: (_) {
+              setState(() {
+                sel ? selectedFocus.remove(a) : selectedFocus.add(a);
+              });
+            },
+            selectedColor: TColor.primaryColor1,
+            labelStyle: TextStyle(color: sel ? Colors.white : TColor.black),
+          );
+        }).toList(),
+      ),
+    ];
+  }
+
+  List<Widget> _stepAge() {
+    return [
+      _heroTitle('Your age', 'Age information helps us assess your metabolic level'),
+      const SizedBox(height: 8),
+      Center(
+        child: Text('$age', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w700)),
+      ),
+      Slider(
+        value: age.toDouble(),
+        min: 12,
+        max: 80,
+        divisions: 68,
+        onChanged: (v) => setState(() => age = v.round()),
+        activeColor: TColor.primaryColor1,
+      ),
+    ];
+  }
+
+  List<Widget> _stepHeight() {
+    final heightDisplay = useMetric
+        ? '${heightCm.round()} cm'
+        : _formatFeet(heightCm);
+    return [
+      _heroTitle('Your height', 'Height information helps us calculate your BMI'),
+      const SizedBox(height: 8),
+      _unitToggle(),
+      const SizedBox(height: 12),
+      Center(
+        child: Text(heightDisplay, style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w800)),
+      ),
+      Slider(
+        value: heightCm,
+        min: 120,
+        max: 210,
+        divisions: 90,
+        onChanged: (v) => setState(() => heightCm = v),
+        activeColor: TColor.primaryColor1,
+      ),
+    ];
+  }
+
+  List<Widget> _stepWeight() {
+    final weightDisplay = useMetric
+        ? '${weightKg.toStringAsFixed(0)} kg'
+        : '${(weightKg * 2.20462).toStringAsFixed(0)} lb';
+    return [
+      _heroTitle('Your current weight', 'We use your weight to fine-tune plans'),
+      const SizedBox(height: 8),
+      _unitToggle(),
+      const SizedBox(height: 12),
+      Center(
+        child: Text(weightDisplay, style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w800)),
+      ),
+      Slider(
+        value: weightKg,
+        min: 30,
+        max: 150,
+        divisions: 120,
+        onChanged: (v) => setState(() => weightKg = v),
+        activeColor: TColor.primaryColor1,
+      ),
+      const SizedBox(height: 12),
+      _bmiCard(),
+    ];
+  }
+
+  Widget _heroTitle(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title,
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+            )),
+        const SizedBox(height: 4),
+        Text(subtitle,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 14,
+            )),
+      ],
+    );
+  }
+
+  Widget _pillOption(String label, bool selected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        decoration: BoxDecoration(
+          color: selected ? TColor.primaryColor1 : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : TColor.black,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _unitToggle() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _unitChip('FT', !useMetric, () => setState(() => useMetric = false)),
+        const SizedBox(width: 8),
+        _unitChip('CM', useMetric, () => setState(() => useMetric = true)),
+      ],
+    );
+  }
+
+  Widget _unitChip(String label, bool selected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? TColor.primaryColor1 : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: TColor.primaryColor1.withOpacity(0.5)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : TColor.primaryColor1,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _bmiCard() {
+    final h = heightCm / 100.0;
+    final bmi = weightKg / (h * h);
+    String status = 'Normal';
+    Color color = Colors.green;
+    if (bmi < 18.5) {
+      status = 'Underweight';
+      color = Colors.blue;
+    } else if (bmi >= 25 && bmi < 30) {
+      status = 'Overweight';
+      color = Colors.orange;
+    } else if (bmi >= 30) {
+      status = 'Obese';
+      color = Colors.red;
+    }
+
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
-      child: TextFormField(
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, color: TColor.primaryColor1),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Current BMI', style: TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                Text(bmi.toStringAsFixed(1),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: color)),
+                const SizedBox(height: 4),
+                Text(status, style: TextStyle(color: color)),
+              ],
+            ),
           ),
-        ),
-        keyboardType: TextInputType.number,
-        onSaved: (value) {
-          if (label.contains('Height')) {
-            height = double.tryParse(value!);
-          } else if (label.contains('Weight')) {
-            weight = double.tryParse(value!);
-          } else if (label.contains('Age')) {
-            age = int.tryParse(value!);
-          }
-        },
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Please enter $label';
-          }
-          return null;
-        },
+          Icon(Icons.monitor_heart, color: color),
+        ],
       ),
     );
+  }
+
+  String _formatFeet(double cm) {
+    final inches = cm / 2.54;
+    final ft = (inches / 12).floor();
+    final inch = (inches - ft * 12).round();
+    return '${ft.toString()}\' ${inch.toString()}\"';
   }
 
   Widget _buildGoalsGrid() {
@@ -382,46 +482,47 @@ class _BodyDataInputScreenState extends State<BodyDataInputScreen> {
     );
   }
 
-  void _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+  bool _canProceed() {
+    switch (_currentStep) {
+      case 0:
+        return selectedGoals.isNotEmpty;
+      case 1:
+        return gender != null && gender!.isNotEmpty;
+      case 2:
+        return selectedFocus.isNotEmpty;
+      default:
+        return true;
+    }
+  }
 
-      _formKey.currentState!.save();
-
-      try {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(widget.uid)
-            .update({
-              'gender': gender,
-              'height': height,
-              'weight': weight,
-              'age': age,
-              'goals': selectedGoals,
-              'hasBodyData': true,
-            });
-
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/');
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error saving data: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
+  Future<void> _submitForm() async {
+    try {
+      setState(() => _isLoading = true);
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.uid)
+          .update({
+            'gender': gender,
+            'height': heightCm,
+            'weight': weightKg,
+            'age': age,
+            'goals': selectedGoals,
+            'focusAreas': selectedFocus,
+            'hasBodyData': true,
           });
-        }
-      }
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/');
+    } catch (e) {
+      if (!mounted) return;
+      showTopBanner(
+        context,
+        title: 'Error',
+        message: 'Error saving data: $e',
+        backgroundColor: Colors.red,
+        icon: Icons.error_outline,
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 }
